@@ -41,6 +41,21 @@ Bu dosya proje degisikliklerini kaydeder.
 
 - No unreleased changes yet.
 
+## 0.2.0 - 2026-03-17
+
+- Phase 2 tamamlandi; `identity/auth` modulu `http / app / domain / store` sinirlarina refactor edildi ve eski root-level handler/service/types yapisi kaldirildi.
+- Auth veri modeli ve SQLC uretilen kodu `uuid` standardina tasindi; generated kod `internal/gen/sqlc/identity/...` altina ayrildi ve eski `store/sqlc` auth paketi kaldirildi.
+- Auth core akislar eklendi: `register`, `login`, `refresh`, `logout`, `logout-all`, `me`.
+- Access token + refresh session modeli kuruldu; refresh rotation ve session revoke davranisi eklendi.
+- `email verify request`, `email verify`, `forgot password`, `reset password` backend akislarina tek kullanimlik token tablolari ve endpointleri eklendi.
+- `identity/access` modulu eklendi; sabit base role modeli (`guest`, `user`, `moderator`, `admin`), permission katalogu, coklu sub-role atamasi ve principal cozumleme omurgasi kuruldu.
+- Authorization guard zinciri eklendi; `guest` runtime principal destegi ve admin/base-role tabanli koruma davranisi standartlastirildi.
+- Access yonetim endpointleri eklendi: permission listesi, sub-role liste/olusturma, user base role guncelleme ve user sub-role atama/kaldirma.
+- `cmd/seed` komutu eklendi; permission katalogu, `manga_moderator`, `comment_moderator`, `chapter_moderator` sub-role'leri ile 1 user, 3 moderator ve 1 admin seed kullanicisi idempotent olarak yukleniyor.
+- Docker image artik `seed` binary'sini de uretiyor; `Makefile` icine `seed` hedefi eklendi.
+- Auth ve access icin yeni route testleri ve PostgreSQL integration testleri eklendi.
+- Dogrulama tekrarlandi: `go test ./...`, `go test -tags=integration ./...`, `docker compose up -d --build`, container ici `migrate up`, `seed`, admin login, `access/me`, refresh, verify/reset ve coklu sub-role smoke akislari canli serviste dogrulandi.
+
 ## 0.1.1 - 2026-03-17
 
 - Phase 1 sonrasi uyumlandirma duzeltmeleri yapildi; plan dokumanlari ile calisan kod arasindaki sapmalar kapatildi.

@@ -8,6 +8,8 @@ package authsqlc
 import (
 	"context"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const createPasswordCredential = `-- name: CreatePasswordCredential :one
@@ -26,7 +28,7 @@ RETURNING user_id, password_hash, created_at, updated_at
 `
 
 type CreatePasswordCredentialParams struct {
-	UserID       string
+	UserID       uuid.UUID
 	PasswordHash string
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
@@ -79,7 +81,7 @@ WHERE user_id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetPasswordCredentialByUserID(ctx context.Context, userID string) (AuthPasswordCredential, error) {
+func (q *Queries) GetPasswordCredentialByUserID(ctx context.Context, userID uuid.UUID) (AuthPasswordCredential, error) {
 	row := q.db.QueryRowContext(ctx, getPasswordCredentialByUserID, userID)
 	var i AuthPasswordCredential
 	err := row.Scan(
@@ -99,7 +101,7 @@ WHERE user_id = $1
 `
 
 type UpdatePasswordHashParams struct {
-	UserID       string
+	UserID       uuid.UUID
 	PasswordHash string
 	UpdatedAt    time.Time
 }

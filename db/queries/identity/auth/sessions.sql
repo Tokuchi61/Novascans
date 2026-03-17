@@ -30,7 +30,8 @@ LIMIT 1;
 
 -- name: RevokeSession :exec
 UPDATE auth_sessions
-SET revoked_at = $2
+SET revoked_at = $2,
+    replaced_by_session_id = $3
 WHERE id = $1;
 
 -- name: RevokeAllSessionsForUser :exec
@@ -38,6 +39,11 @@ UPDATE auth_sessions
 SET revoked_at = $2
 WHERE user_id = $1
   AND revoked_at IS NULL;
+
+-- name: TouchSessionUsage :exec
+UPDATE auth_sessions
+SET last_used_at = $2
+WHERE id = $1;
 
 -- name: DeleteExpiredSessions :execrows
 DELETE FROM auth_sessions

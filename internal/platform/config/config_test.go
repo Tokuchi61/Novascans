@@ -13,25 +13,30 @@ func TestLoadFromLookupParsesAllRequiredValues(t *testing.T) {
 	t.Setenv("NOVASCANS_APP_ENV", "test")
 
 	values := map[string]string{
-		"NOVASCANS_APP_ENV":               "development",
-		"NOVASCANS_HTTP_HOST":             "0.0.0.0",
-		"NOVASCANS_HTTP_PORT":             "8080",
-		"NOVASCANS_HTTP_READ_TIMEOUT":     "15s",
-		"NOVASCANS_HTTP_WRITE_TIMEOUT":    "15s",
-		"NOVASCANS_HTTP_IDLE_TIMEOUT":     "60s",
-		"NOVASCANS_HTTP_SHUTDOWN_TIMEOUT": "10s",
-		"NOVASCANS_DB_HOST":               "postgres",
-		"NOVASCANS_DB_PORT":               "5432",
-		"NOVASCANS_DB_NAME":               "novascans",
-		"NOVASCANS_DB_TEST_NAME":          "novascans_test",
-		"NOVASCANS_DB_USER":               "postgres",
-		"NOVASCANS_DB_PASSWORD":           "postgres",
-		"NOVASCANS_DB_SSLMODE":            "disable",
-		"NOVASCANS_DB_MAX_OPEN_CONNS":     "25",
-		"NOVASCANS_DB_MAX_IDLE_CONNS":     "25",
-		"NOVASCANS_DB_CONN_MAX_LIFETIME":  "5m",
-		"NOVASCANS_LOG_LEVEL":             "debug",
-		"NOVASCANS_METRICS_ENABLED":       "true",
+		"NOVASCANS_APP_ENV":                           "development",
+		"NOVASCANS_HTTP_HOST":                         "0.0.0.0",
+		"NOVASCANS_HTTP_PORT":                         "8080",
+		"NOVASCANS_HTTP_READ_TIMEOUT":                 "15s",
+		"NOVASCANS_HTTP_WRITE_TIMEOUT":                "15s",
+		"NOVASCANS_HTTP_IDLE_TIMEOUT":                 "60s",
+		"NOVASCANS_HTTP_SHUTDOWN_TIMEOUT":             "10s",
+		"NOVASCANS_DB_HOST":                           "postgres",
+		"NOVASCANS_DB_PORT":                           "5432",
+		"NOVASCANS_DB_NAME":                           "novascans",
+		"NOVASCANS_DB_TEST_NAME":                      "novascans_test",
+		"NOVASCANS_DB_USER":                           "postgres",
+		"NOVASCANS_DB_PASSWORD":                       "postgres",
+		"NOVASCANS_DB_SSLMODE":                        "disable",
+		"NOVASCANS_DB_MAX_OPEN_CONNS":                 "25",
+		"NOVASCANS_DB_MAX_IDLE_CONNS":                 "25",
+		"NOVASCANS_DB_CONN_MAX_LIFETIME":              "5m",
+		"NOVASCANS_AUTH_ACCESS_TOKEN_SECRET":          "development-secret",
+		"NOVASCANS_AUTH_ACCESS_TOKEN_TTL":             "15m",
+		"NOVASCANS_AUTH_REFRESH_TOKEN_TTL":            "720h",
+		"NOVASCANS_AUTH_EMAIL_VERIFICATION_TOKEN_TTL": "24h",
+		"NOVASCANS_AUTH_PASSWORD_RESET_TOKEN_TTL":     "1h",
+		"NOVASCANS_LOG_LEVEL":                         "debug",
+		"NOVASCANS_METRICS_ENABLED":                   "true",
 	}
 
 	cfg, err := load(func(key string) (string, bool) {
@@ -48,6 +53,10 @@ func TestLoadFromLookupParsesAllRequiredValues(t *testing.T) {
 
 	if cfg.DB.ConnMaxLifetime != 5*time.Minute {
 		t.Fatalf("expected DB conn max lifetime 5m, got %s", cfg.DB.ConnMaxLifetime)
+	}
+
+	if cfg.Auth.AccessTokenTTL != 15*time.Minute {
+		t.Fatalf("expected access token TTL 15m, got %s", cfg.Auth.AccessTokenTTL)
 	}
 
 	if !cfg.Metrics.Enabled {

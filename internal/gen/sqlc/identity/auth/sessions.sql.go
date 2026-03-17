@@ -9,6 +9,8 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const createSession = `-- name: CreateSession :one
@@ -29,12 +31,12 @@ INSERT INTO auth_sessions (
     $6,
     $7
 )
-RETURNING id, user_id, token_hash, user_agent, ip_address, expires_at, revoked_at, created_at
+RETURNING id, user_id, token_hash, user_agent, ip_address, expires_at, revoked_at, replaced_by_session_id, last_used_at, created_at
 `
 
 type CreateSessionParams struct {
-	ID        string
-	UserID    string
+	ID        uuid.UUID
+	UserID    uuid.UUID
 	TokenHash string
 	UserAgent string
 	IpAddress string
@@ -61,6 +63,8 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (A
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.RevokedAt,
+		&i.ReplacedBySessionID,
+		&i.LastUsedAt,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -80,12 +84,12 @@ func (q *Queries) DeleteExpiredSessions(ctx context.Context, expiresAt time.Time
 }
 
 const getSessionByID = `-- name: GetSessionByID :one
-SELECT id, user_id, token_hash, user_agent, ip_address, expires_at, revoked_at, created_at FROM auth_sessions
+SELECT id, user_id, token_hash, user_agent, ip_address, expires_at, revoked_at, replaced_by_session_id, last_used_at, created_at FROM auth_sessions
 WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetSessionByID(ctx context.Context, id string) (AuthSession, error) {
+func (q *Queries) GetSessionByID(ctx context.Context, id uuid.UUID) (AuthSession, error) {
 	row := q.db.QueryRowContext(ctx, getSessionByID, id)
 	var i AuthSession
 	err := row.Scan(
@@ -96,13 +100,15 @@ func (q *Queries) GetSessionByID(ctx context.Context, id string) (AuthSession, e
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.RevokedAt,
+		&i.ReplacedBySessionID,
+		&i.LastUsedAt,
 		&i.CreatedAt,
 	)
 	return i, err
 }
 
 const getSessionByTokenHash = `-- name: GetSessionByTokenHash :one
-SELECT id, user_id, token_hash, user_agent, ip_address, expires_at, revoked_at, created_at FROM auth_sessions
+SELECT id, user_id, token_hash, user_agent, ip_address, expires_at, revoked_at, replaced_by_session_id, last_used_at, created_at FROM auth_sessions
 WHERE token_hash = $1
 LIMIT 1
 `
@@ -118,6 +124,8 @@ func (q *Queries) GetSessionByTokenHash(ctx context.Context, tokenHash string) (
 		&i.IpAddress,
 		&i.ExpiresAt,
 		&i.RevokedAt,
+		&i.ReplacedBySessionID,
+		&i.LastUsedAt,
 		&i.CreatedAt,
 	)
 	return i, err
@@ -131,7 +139,7 @@ WHERE user_id = $1
 `
 
 type RevokeAllSessionsForUserParams struct {
-	UserID    string
+	UserID    uuid.UUID
 	RevokedAt sql.NullTime
 }
 
@@ -142,16 +150,34 @@ func (q *Queries) RevokeAllSessionsForUser(ctx context.Context, arg RevokeAllSes
 
 const revokeSession = `-- name: RevokeSession :exec
 UPDATE auth_sessions
-SET revoked_at = $2
+SET revoked_at = $2,
+    replaced_by_session_id = $3
 WHERE id = $1
 `
 
 type RevokeSessionParams struct {
-	ID        string
-	RevokedAt sql.NullTime
+	ID                  uuid.UUID
+	RevokedAt           sql.NullTime
+	ReplacedBySessionID uuid.NullUUID
 }
 
 func (q *Queries) RevokeSession(ctx context.Context, arg RevokeSessionParams) error {
-	_, err := q.db.ExecContext(ctx, revokeSession, arg.ID, arg.RevokedAt)
+	_, err := q.db.ExecContext(ctx, revokeSession, arg.ID, arg.RevokedAt, arg.ReplacedBySessionID)
+	return err
+}
+
+const touchSessionUsage = `-- name: TouchSessionUsage :exec
+UPDATE auth_sessions
+SET last_used_at = $2
+WHERE id = $1
+`
+
+type TouchSessionUsageParams struct {
+	ID         uuid.UUID
+	LastUsedAt sql.NullTime
+}
+
+func (q *Queries) TouchSessionUsage(ctx context.Context, arg TouchSessionUsageParams) error {
+	_, err := q.db.ExecContext(ctx, touchSessionUsage, arg.ID, arg.LastUsedAt)
 	return err
 }

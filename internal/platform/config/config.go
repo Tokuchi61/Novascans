@@ -14,6 +14,7 @@ type Config struct {
 	App     AppConfig
 	HTTP    HTTPConfig
 	DB      DBConfig
+	Auth    AuthConfig
 	Log     LogConfig
 	Metrics MetricsConfig
 }
@@ -43,6 +44,14 @@ type DBConfig struct {
 	MaxOpenConns    int
 	MaxIdleConns    int
 	ConnMaxLifetime time.Duration
+}
+
+type AuthConfig struct {
+	AccessTokenSecret         string
+	AccessTokenTTL            time.Duration
+	RefreshTokenTTL           time.Duration
+	EmailVerificationTokenTTL time.Duration
+	PasswordResetTokenTTL     time.Duration
 }
 
 type LogConfig struct {
@@ -78,6 +87,13 @@ func Default() Config {
 			MaxOpenConns:    25,
 			MaxIdleConns:    25,
 			ConnMaxLifetime: 5 * time.Minute,
+		},
+		Auth: AuthConfig{
+			AccessTokenSecret:         "change-me",
+			AccessTokenTTL:            15 * time.Minute,
+			RefreshTokenTTL:           30 * 24 * time.Hour,
+			EmailVerificationTokenTTL: 24 * time.Hour,
+			PasswordResetTokenTTL:     time.Hour,
 		},
 		Log: LogConfig{
 			Level: "info",
@@ -122,6 +138,12 @@ func load(lookup func(string) (string, bool)) (Config, error) {
 	cfg.DB.MaxOpenConns = requireInt(lookup, "NOVASCANS_DB_MAX_OPEN_CONNS", &errs)
 	cfg.DB.MaxIdleConns = requireInt(lookup, "NOVASCANS_DB_MAX_IDLE_CONNS", &errs)
 	cfg.DB.ConnMaxLifetime = requireDuration(lookup, "NOVASCANS_DB_CONN_MAX_LIFETIME", &errs)
+
+	cfg.Auth.AccessTokenSecret = requireString(lookup, "NOVASCANS_AUTH_ACCESS_TOKEN_SECRET", &errs)
+	cfg.Auth.AccessTokenTTL = requireDuration(lookup, "NOVASCANS_AUTH_ACCESS_TOKEN_TTL", &errs)
+	cfg.Auth.RefreshTokenTTL = requireDuration(lookup, "NOVASCANS_AUTH_REFRESH_TOKEN_TTL", &errs)
+	cfg.Auth.EmailVerificationTokenTTL = requireDuration(lookup, "NOVASCANS_AUTH_EMAIL_VERIFICATION_TOKEN_TTL", &errs)
+	cfg.Auth.PasswordResetTokenTTL = requireDuration(lookup, "NOVASCANS_AUTH_PASSWORD_RESET_TOKEN_TTL", &errs)
 
 	cfg.Log.Level = requireString(lookup, "NOVASCANS_LOG_LEVEL", &errs)
 	cfg.Metrics.Enabled = requireBool(lookup, "NOVASCANS_METRICS_ENABLED", &errs)

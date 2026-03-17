@@ -9,12 +9,15 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
     id,
     email,
+    base_role,
     status,
     email_verified_at,
     created_at,
@@ -25,14 +28,16 @@ INSERT INTO users (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 )
-RETURNING id, email, status, email_verified_at, created_at, updated_at
+RETURNING id, email, base_role, status, email_verified_at, created_at, updated_at
 `
 
 type CreateUserParams struct {
-	ID              string
+	ID              uuid.UUID
 	Email           string
+	BaseRole        string
 	Status          string
 	EmailVerifiedAt sql.NullTime
 	CreatedAt       time.Time
@@ -43,6 +48,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.ID,
 		arg.Email,
+		arg.BaseRole,
 		arg.Status,
 		arg.EmailVerifiedAt,
 		arg.CreatedAt,
@@ -52,6 +58,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.BaseRole,
 		&i.Status,
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
@@ -61,7 +68,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
-SELECT id, email, status, email_verified_at, created_at, updated_at FROM users
+SELECT id, email, base_role, status, email_verified_at, created_at, updated_at FROM users
 WHERE email = $1
 LIMIT 1
 `
@@ -72,6 +79,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.BaseRole,
 		&i.Status,
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
@@ -81,17 +89,18 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, email, status, email_verified_at, created_at, updated_at FROM users
+SELECT id, email, base_role, status, email_verified_at, created_at, updated_at FROM users
 WHERE id = $1
 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
 	row := q.db.QueryRowContext(ctx, getUserByID, id)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.Email,
+		&i.BaseRole,
 		&i.Status,
 		&i.EmailVerifiedAt,
 		&i.CreatedAt,
@@ -102,13 +111,14 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
 
 const markUserEmailVerified = `-- name: MarkUserEmailVerified :exec
 UPDATE users
-SET email_verified_at = $2,
+SET status = 'active',
+    email_verified_at = $2,
     updated_at = $2
 WHERE id = $1
 `
 
 type MarkUserEmailVerifiedParams struct {
-	ID              string
+	ID              uuid.UUID
 	EmailVerifiedAt sql.NullTime
 }
 

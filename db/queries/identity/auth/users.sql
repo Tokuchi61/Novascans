@@ -2,6 +2,7 @@
 INSERT INTO users (
     id,
     email,
+    base_role,
     status,
     email_verified_at,
     created_at,
@@ -12,7 +13,8 @@ INSERT INTO users (
     $3,
     $4,
     $5,
-    $6
+    $6,
+    $7
 )
 RETURNING *;
 
@@ -28,6 +30,7 @@ LIMIT 1;
 
 -- name: MarkUserEmailVerified :exec
 UPDATE users
-SET email_verified_at = $2,
+SET status = 'active',
+    email_verified_at = $2,
     updated_at = $2
 WHERE id = $1;

@@ -12,10 +12,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	authapp "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/app"
+	"github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
-	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
 
 func TestPostgresRepositoryAndTxManager(t *testing.T) {
@@ -51,17 +53,16 @@ func TestPostgresRepositoryAndTxManager(t *testing.T) {
 	resetTables(t, db)
 
 	repo := NewPostgresRepository(db)
-	txManager := platformdb.NewTxManager(db)
+	unitOfWork := NewPostgresUnitOfWork(db)
 
 	now := time.Now().UTC()
-	userID := "integration-user"
+	userID := uuid.New()
 
-	err = txManager.WithinTransaction(t.Context(), func(ctx context.Context, tx *sql.Tx) error {
-		txRepo := repo.WithTx(tx)
-
-		if _, err := txRepo.CreateUser(ctx, CreateUserParams{
+	err = unitOfWork.WithinTransaction(t.Context(), func(ctx context.Context, txRepo authapp.Repository) error {
+		if _, err := txRepo.CreateUser(ctx, domain.User{
 			ID:        userID,
 			Email:     "integration@example.com",
+			BaseRole:  "user",
 			Status:    "active",
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -69,7 +70,7 @@ func TestPostgresRepositoryAndTxManager(t *testing.T) {
 			return err
 		}
 
-		if _, err := txRepo.CreatePasswordCredential(ctx, CreatePasswordCredentialParams{
+		if _, err := txRepo.CreatePasswordCredential(ctx, domain.PasswordCredential{
 			UserID:       userID,
 			PasswordHash: "hash",
 			CreatedAt:    now,
@@ -84,7 +85,7 @@ func TestPostgresRepositoryAndTxManager(t *testing.T) {
 		t.Fatal("expected transaction error, got nil")
 	}
 
-	if _, err := repo.GetUserByID(t.Context(), userID); !errors.Is(err, sql.ErrNoRows) {
+	if _, err := repo.GetUserByID(t.Context(), userID); !authapp.HasCode(err, authapp.CodeNotFound) {
 		t.Fatalf("expected user to be rolled back, got %v", err)
 	}
 }

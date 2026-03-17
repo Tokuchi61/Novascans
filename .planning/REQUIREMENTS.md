@@ -58,6 +58,22 @@
 - **MANGA-01**: Manga ve chapter modulu ayrica planlanir.
 - **COMM-01**: Wall, yorum ve DM modulu ayrica planlanir.
 
+### Phase 2 Candidate Requirements
+
+- [x] **AUTH-02**: Auth modulu `register`, `login`, `refresh`, `logout current session`, `logout all sessions` ve `me` akislarini tamamlar.
+- [x] **AUTH-03**: Email verification ve password reset backend akislarina token bazli zemin eklenir; mail provider bu fazda zorunlu degildir.
+- [x] **AUTH-04**: `OAuth`, sosyal girisler ve `2FA` Phase 2 kapsami disinda tutulur.
+- [x] **AUTH-05**: Auth modulunun ic yapisi DTO, app/domain model ve persistence sinirlarini daha net ayiracak sekilde refactor edilir.
+- [x] **ACCESS-01**: `identity/access` modulu sabit sistem rolleri `guest`, `user`, `moderator`, `admin` ile kurulur.
+- [x] **ACCESS-02**: `guest` runtime principal olarak ele alinir ve kullanici kaydi olmadan authorization kararina girebilir.
+- [x] **ACCESS-03**: Kullaniciya birden fazla alt rol atanabilir; alt roller permission katalogundan yetki alir.
+- [x] **ACCESS-04**: `moderator` moderasyon alani icin kilit roldur; panel ici gercek yetki alt rollerle belirlenir.
+- [x] **ACCESS-05**: Sistem baslangicinda `manga_moderator`, `comment_moderator`, `chapter_moderator` seed alt rolleri yuklenir.
+- [x] **ACCESS-06**: Authorization middleware ve principal cozumleme mantigi sonraki moduller tarafindan tekrar kullanilabilir hale gelir.
+- [x] **ARCH-10**: Generated `sqlc` kodu ile el yazisi persistence kodu arasindaki sinir daha belirgin hale getirilir.
+- [x] **DATA-08**: Auth ve access veri modelindeki kimlik alanlari `uuid` standardina tasinir.
+- [x] **DEV-10**: Seed ve entegrasyon test stratejisi auth + access modullerini birlikte dogrular.
+
 ## Out of Scope
 
 | Feature | Reason |
@@ -103,6 +119,19 @@
 | DEV-07 | Phase 1 | Complete |
 | DEV-08 | Phase 1 | Complete |
 | DEV-09 | Phase 1 | Complete |
+| AUTH-02 | Phase 2 | Complete |
+| AUTH-03 | Phase 2 | Complete |
+| AUTH-04 | Phase 2 | Complete |
+| AUTH-05 | Phase 2 | Complete |
+| ACCESS-01 | Phase 2 | Complete |
+| ACCESS-02 | Phase 2 | Complete |
+| ACCESS-03 | Phase 2 | Complete |
+| ACCESS-04 | Phase 2 | Complete |
+| ACCESS-05 | Phase 2 | Complete |
+| ACCESS-06 | Phase 2 | Complete |
+| ARCH-10 | Phase 2 | Complete |
+| DATA-08 | Phase 2 | Complete |
+| DEV-10 | Phase 2 | Complete |
 
 **Coverage:**
 - v1 requirements: 32 total
@@ -119,7 +148,9 @@
 - Container ici `/app/migrate status` ve `/app/migrate up` komutlari dogrulandi.
 - PostgreSQL container'i icinde `novascans_test` veritabani tekrar cagrilabilir script ile dogrulandi.
 - `readyz`, `metrics`, `POST /api/v1/auth/users` ve `POST /api/v1/auth/sessions` canli servis uzerinde yeniden dogrulandi.
+- Phase 2 icin `go test ./...` ve `go test -tags=integration ./...` auth+access degisiklikleriyle yeniden calistirildi.
+- Canli Docker dogrulamasi tekrarlandi: `docker compose up -d --build`, container ici `migrate up`, `seed`, admin login, `access/me`, `refresh`, verify/reset akis smoke senaryolari ve coklu sub-role atama akislari dogrulandi.
 
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-17 after Phase 1 alignment fixes*
+*Last updated: 2026-03-17 after Phase 2 completion*

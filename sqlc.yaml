@@ -6,5 +6,23 @@ sql:
     gen:
       go:
         package: "authsqlc"
-        out: "internal/modules/identity/auth/store/sqlc"
+        out: "internal/gen/sqlc/identity/auth"
         sql_package: "database/sql"
+        overrides:
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"
+  - engine: "postgresql"
+    schema: "db/schema"
+    queries: "db/queries/identity/access"
+    gen:
+      go:
+        package: "accesssqlc"
+        out: "internal/gen/sqlc/identity/access"
+        sql_package: "database/sql"
+        overrides:
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"

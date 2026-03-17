@@ -5,7 +5,7 @@ GO_TEST_IMAGE=golang:1.26.1-alpine
 TEST_DB_NAME=novascans_test
 TEST_DB_DSN=postgres://postgres:postgres@postgres:5432/$(TEST_DB_NAME)?sslmode=disable
 
-.PHONY: fmt test test-integration test-db-ensure dev-up dev-down sqlc migrate-up migrate-down migrate-status
+.PHONY: fmt test test-integration test-db-ensure dev-up dev-down sqlc migrate-up migrate-down migrate-status seed
 
 fmt:
 	go fmt ./...
@@ -37,3 +37,6 @@ migrate-down:
 
 migrate-status:
 	$(COMPOSE) exec -T api /app/migrate status
+
+seed:
+	$(COMPOSE) exec -T api /app/seed

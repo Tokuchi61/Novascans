@@ -16,67 +16,83 @@ func TestAuthRoutesSupportUserAndSessionFlow(t *testing.T) {
 		t.Fatalf("bootstrap returned error: %v", err)
 	}
 
-	createUserBody := []byte(`{"email":"user@example.com","password":"supersecret"}`)
-	createUserReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/users", bytes.NewReader(createUserBody))
-	createUserRec := httptest.NewRecorder()
+	registerBody := []byte(`{"email":"user@example.com","password":"supersecret"}`)
+	registerReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader(registerBody))
+	registerRec := httptest.NewRecorder()
 
-	runtime.Router.ServeHTTP(createUserRec, createUserReq)
+	runtime.Router.ServeHTTP(registerRec, registerReq)
 
-	if createUserRec.Code != http.StatusCreated {
-		t.Fatalf("expected create user status %d, got %d", http.StatusCreated, createUserRec.Code)
+	if registerRec.Code != http.StatusCreated {
+		t.Fatalf("expected register status %d, got %d", http.StatusCreated, registerRec.Code)
 	}
 
-	var createUserResp struct {
+	var registerResp struct {
 		Data struct {
-			ID string `json:"id"`
+			User struct {
+				ID string `json:"id"`
+			} `json:"user"`
+			Session struct {
+				ID string `json:"id"`
+			} `json:"session"`
+			AccessToken  string `json:"access_token"`
+			RefreshToken string `json:"refresh_token"`
 		} `json:"data"`
 	}
 
-	if err := json.NewDecoder(createUserRec.Body).Decode(&createUserResp); err != nil {
-		t.Fatalf("decode create user response: %v", err)
+	if err := json.NewDecoder(registerRec.Body).Decode(&registerResp); err != nil {
+		t.Fatalf("decode register response: %v", err)
 	}
 
-	getUserReq := httptest.NewRequest(http.MethodGet, "/api/v1/auth/users/"+createUserResp.Data.ID, nil)
-	getUserRec := httptest.NewRecorder()
-
-	runtime.Router.ServeHTTP(getUserRec, getUserReq)
-
-	if getUserRec.Code != http.StatusOK {
-		t.Fatalf("expected get user status %d, got %d", http.StatusOK, getUserRec.Code)
+	if registerResp.Data.AccessToken == "" || registerResp.Data.RefreshToken == "" {
+		t.Fatal("expected access and refresh token to be returned")
 	}
 
-	createSessionBody := []byte(`{"email":"user@example.com","password":"supersecret"}`)
-	createSessionReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/sessions", bytes.NewReader(createSessionBody))
-	createSessionRec := httptest.NewRecorder()
+	meReq := httptest.NewRequest(http.MethodGet, "/api/v1/auth/me", nil)
+	meReq.Header.Set("Authorization", "Bearer "+registerResp.Data.AccessToken)
+	meRec := httptest.NewRecorder()
 
-	runtime.Router.ServeHTTP(createSessionRec, createSessionReq)
+	runtime.Router.ServeHTTP(meRec, meReq)
 
-	if createSessionRec.Code != http.StatusCreated {
-		t.Fatalf("expected create session status %d, got %d", http.StatusCreated, createSessionRec.Code)
+	if meRec.Code != http.StatusOK {
+		t.Fatalf("expected me status %d, got %d", http.StatusOK, meRec.Code)
 	}
 
-	var createSessionResp struct {
+	refreshBody := []byte(`{"refresh_token":"` + registerResp.Data.RefreshToken + `"}`)
+	refreshReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/refresh", bytes.NewReader(refreshBody))
+	refreshRec := httptest.NewRecorder()
+
+	runtime.Router.ServeHTTP(refreshRec, refreshReq)
+
+	if refreshRec.Code != http.StatusOK {
+		t.Fatalf("expected refresh status %d, got %d", http.StatusOK, refreshRec.Code)
+	}
+
+	var refreshResp struct {
 		Data struct {
-			ID    string `json:"id"`
-			Token string `json:"token"`
+			Session struct {
+				ID string `json:"id"`
+			} `json:"session"`
+			AccessToken  string `json:"access_token"`
+			RefreshToken string `json:"refresh_token"`
 		} `json:"data"`
 	}
 
-	if err := json.NewDecoder(createSessionRec.Body).Decode(&createSessionResp); err != nil {
-		t.Fatalf("decode create session response: %v", err)
+	if err := json.NewDecoder(refreshRec.Body).Decode(&refreshResp); err != nil {
+		t.Fatalf("decode refresh response: %v", err)
 	}
 
-	if createSessionResp.Data.Token == "" {
-		t.Fatal("expected session token to be returned")
+	if refreshResp.Data.AccessToken == "" || refreshResp.Data.RefreshToken == "" {
+		t.Fatal("expected refreshed access and refresh token to be returned")
 	}
 
-	revokeReq := httptest.NewRequest(http.MethodDelete, "/api/v1/auth/sessions/"+createSessionResp.Data.ID, nil)
-	revokeRec := httptest.NewRecorder()
+	logoutReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/logout", nil)
+	logoutReq.Header.Set("Authorization", "Bearer "+refreshResp.Data.AccessToken)
+	logoutRec := httptest.NewRecorder()
 
-	runtime.Router.ServeHTTP(revokeRec, revokeReq)
+	runtime.Router.ServeHTTP(logoutRec, logoutReq)
 
-	if revokeRec.Code != http.StatusNoContent {
-		t.Fatalf("expected revoke session status %d, got %d", http.StatusNoContent, revokeRec.Code)
+	if logoutRec.Code != http.StatusNoContent {
+		t.Fatalf("expected logout status %d, got %d", http.StatusNoContent, logoutRec.Code)
 	}
 }
 
@@ -86,7 +102,7 @@ func TestAuthRoutesReturnValidationErrorEnvelope(t *testing.T) {
 		t.Fatalf("bootstrap returned error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/users", bytes.NewReader([]byte(`{"email":"invalid","password":"123"}`)))
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewReader([]byte(`{"email":"invalid","password":"123"}`)))
 	rec := httptest.NewRecorder()
 
 	runtime.Router.ServeHTTP(rec, req)

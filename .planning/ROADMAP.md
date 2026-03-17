@@ -2,7 +2,7 @@
 
 ## Overview
 
-Roadmap sifirlandi ve daraltildi. Su an yalnizca ilk faz planlaniyor: temel backend altyapisi. Bu faz tamamlandiginda proje, sonraki auth ve domain fazlarini kirilmadan tasiyabilecek net bir teknik zemine sahip olacak.
+Roadmap dar kapsamli fazlarla ilerliyor. Phase 1 ve Phase 2 tamamlandi. Projenin omurgasi artik `infrastructure + identity/auth + identity/access` seviyesinde stabil.
 
 ## Phases
 
@@ -11,6 +11,7 @@ Roadmap sifirlandi ve daraltildi. Su an yalnizca ilk faz planlaniyor: temel back
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 1: Infrastructure Foundation** - Proje iskeleti, router, veri erisim katmani, Docker, PostgreSQL ve temel backend konvansiyonlari netlesir.
+- [x] **Phase 2: Identity Core and Access Control** - Auth akislari tamamlandi, access/RBAC modulu eklendi, UUID standardi yerlestirildi ve auth modulu ic yapisi buyumeye uygun sekilde toparlandi.
 
 ## Phase Details
 
@@ -38,8 +39,35 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1
+Phases execute in numeric order: 1 -> 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Infrastructure Foundation | 5/5 | Completed | 2026-03-17 (aligned with 0.1.1 patch) |
+| 2. Identity Core and Access Control | 6/6 | Completed | 2026-03-17 |
+
+## Phase Details
+
+### Phase 2: Identity Core and Access Control
+**Goal**: `identity/auth` modulunu production'a yakin cekirdek seviyeye tasimak, `identity/access` modulunu eklemek ve authorization modelini sabit roller + coklu alt roller mantigi ile kurmak.
+**Depends on**: Phase 1
+**Requirements**: [AUTH-01, ACCESS-01, ACCESS-02, ACCESS-03, ACCESS-04, ACCESS-05, ACCESS-06, AUTH-02, AUTH-03, AUTH-04, AUTH-05, ARCH-10, DATA-08, DEV-10]
+**Success Criteria** (what must be TRUE):
+  1. Auth modulu `register`, `login`, `refresh`, `logout current session`, `logout all sessions`, `me`, `email verify request`, `email verify`, `forgot password` ve `reset password` akislarini destekler.
+  2. `OAuth`, sosyal giris ve `2FA` bu faza dahil edilmeden disarida tutulur.
+  3. Sistemde sabit `guest`, `user`, `moderator`, `admin` rollerinin anlami nettir; `guest` runtime principal olarak calisir.
+  4. `moderator` rolune sahip kullanici moderasyon alanina girebilir, ama gorecegi/isletecegi kisimlar admin tarafindan atanabilen birden fazla alt rol ile belirlenir.
+  5. Seed verisi en az `user`, `moderator`, `admin` sistem rollerini ve `manga_moderator`, `comment_moderator`, `chapter_moderator` alt rollerini yukler.
+  6. Auth ve access veri modeli ile ilgili kimlik alanlari `uuid` standardina tasinir; PostgreSQL tarafinda native `uuid` tipi kullanilir.
+  7. Auth modulu ic refactor gecirir; DTO, app/domain model ve persistence sinirlari netlesir, generated `sqlc` kodu el yazisi koddan daha temiz ayrilir.
+  8. Authorization middleware ve access karar katmani sonraki manga, comment ve admin fazlarina tekrar kullanilabilir bir temel saglar.
+**Plans**: 6 plans
+**Post-completion maintenance**: `0.2.0` ile auth core, verification/reset, access module, seed komutu, UUID standardizasyonu ve canlı smoke dogrulamasi tamamlandi.
+
+Plans:
+- [x] 02-01: `identity/auth` modulunu `http`, `app`, `domain`, `store` sinirlarina gore refactor et; HTTP hata bagimliligini service katmanindan ayir ve generated `sqlc` kod konumunu netlestir
+- [x] 02-02: Tum auth kimlik alanlarini `uuid` standardina tasi; PostgreSQL `uuid` kolonlari, Go `uuid` tipi ve migration/query/model donusumunu tamamla
+- [x] 02-03: Auth core akislarini tamamla: register, login, refresh rotation, me, current/all session logout ve session yonetim davranislarini sabitle
+- [x] 02-04: Email verification ve password reset token zeminini kur; dis mail provider olmadan request/consume akislarini backend seviyesinde tamamla
+- [x] 02-05: `identity/access` modulunu kur; sabit sistem rollerini, permission katalogunu, coklu alt rol atamasini, principal/cozumleme ve authorization middleware yapisini uygula
+- [x] 02-06: Seed verisini, rol/sub-role baslangic kayitlarini, auth-access entegrasyon testlerini, changelog ve teslim dogrulamalarini tamamla
