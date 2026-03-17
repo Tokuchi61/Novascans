@@ -12,13 +12,14 @@ Sonraki auth, manga, topluluk ve admin modullerini tekrar temel degistirmeden ta
 
 ### Validated
 
-(None yet - ship to validate)
+- [x] Go, Docker ve PostgreSQL tabanli temel backend altyapisi calisiyor.
+- [x] Router, veri erisim katmani, migration ve config konvansiyonlari uygulandi ve dogrulandi.
+- [x] Sonraki moduller icin tekrar kullanilabilir proje iskeleti, hata modeli ve gelistirme akisi tanimlandi.
 
 ### Active
 
-- [ ] Go, Docker ve PostgreSQL tabanli temel backend altyapisi calisir.
-- [ ] Router, veri erisim katmani, migration ve config konvansiyonlari netlesir.
-- [ ] Sonraki moduller icin tekrar kullanilabilir proje iskeleti, hata modeli ve gelistirme akisi tanimlanir.
+- [ ] Sonraki milestone ve domain fazlari planlanacak.
+- [ ] Auth core sonraki asamada bu temel uzerine genisletilecek.
 
 ### Out of Scope
 
@@ -30,7 +31,7 @@ Sonraki auth, manga, topluluk ve admin modullerini tekrar temel degistirmeden ta
 
 Planlama yaklasimi degisti: artik tum ozellikler tek roadmap icinde zorlanmayacak. Bunun yerine her seferinde dar bir problem secilecek, planlanacak, uygulanacak ve ondan sonra siradaki alan secilecek. Bu ilk alan "temel backend altyapisi" olarak secildi. Ancak bu, gecici veya oyuncak seviyesinde bir kurulum anlamina gelmeyecek; Faz 1 kararlarinin amaci ileride kritik mimari veya veri butunlugu sorunlari yaratmayacak net bir temel kurmaktir.
 
-Teknik sabitler su an icin nettir: Go kullanilacak, servis Docker icinde calisacak ve PostgreSQL ana veritabani olacak. Ilk altyapi fazi icin cekirdek secimler de netlesti: router olarak `chi`, veri erisim katmani olarak `sqlc`, migration araci olarak `goose` kullanilacak. Surum politikasi guncel stabil surumleri hedefleyecek; bu planlama turunda referans Go surumu `1.26.1`, PostgreSQL surumu `18.3` olarak alindi.
+Teknik sabitler su an icin nettir: Go kullanilacak, servis Docker icinde calisacak ve PostgreSQL ana veritabani olacak. Ilk altyapi fazi icin cekirdek secimler de netlesti: router olarak `chi`, veri erisim katmani olarak `sqlc`, migration araci olarak `goose` kullanilacak. Surum politikasi guncel stabil surumleri hedefleyecek; Docker build ve resmi integration test runner'i `Go 1.26.1`, PostgreSQL tarafi `18.3` olarak pinlendi. Modul dosyasindaki `go 1.26.0` satiri ise repo uyumluluk baseline'i olarak korunur.
 
 Modul organizasyonu icin de temel karar alindi: fiziksel yapi `kategori -> gercek modul` seklinde kurulacak. Ust seviye klasorler yalnizca gruplama amaci tasiyacak; is kurallari alttaki gercek modullerde yasayacak. Ornek hedef aileler su sekildedir:
 - `identity/auth`, `identity/access`
@@ -42,9 +43,11 @@ Modul organizasyonu icin de temel karar alindi: fiziksel yapi `kategori -> gerce
 
 Bu karar, `user` gibi tek bir buyuk modul altina wall, friends ve dm gibi davranislari yigmayi engeller. Altyapi tercihleri icin ek kararlar da alindi:
 - Config yalnizca `env` tabanli olacak; `.env.example` bulunacak, uygulama acilisinda typed config parse edilip eksik zorunlu alanlarda fail-fast davranacak.
+- Lokal `go run` ve `go test` akislarinin ayni env sozlesmesini kullanabilmesi icin `.env` dosyasi varsa otomatik yuklenecek.
 - SQL kaynaklari `db/queries/<kategori>/<modul>` altinda tutulacak; `sqlc` ile uretilen Go kodu ilgili modullerin `store/sqlc` dizinlerinde yer alacak.
 - Event altyapisi Faz 1'de `EventBus` interface'i ve basit bir `in-memory` implementasyonuyla kurulacak; dis broker entegrasyonu sonra eklenecek.
-- Docker gelistirme ortami varsayilan olarak `api + postgres` seklinde olacak; testler ayni PostgreSQL container'inda ayri bir test veritabani kullanacak.
+- Docker gelistirme ortami varsayilan olarak `api + postgres` seklinde olacak; host tarafindaki `.env` veritabani host'unu `localhost` olarak tasirken `api` servisi compose icinde `postgres` host override'i kullanacak.
+- Testler ayni PostgreSQL container'inda ayri bir `novascans_test` veritabani kullanacak; init script ve tekrar cagrilabilir `test-db-ensure` akisi bu veritabanini otomatik hazir tutacak.
 
 Bootstrap yapisi icin secilen yon su olacak:
 - `cmd/api/main.go` ince bir entrypoint olarak kalacak.
@@ -69,7 +72,7 @@ Test tabani icin secilen yon su olacak:
 - Test katmanlari `unit`, `handler/http`, `integration` ve `smoke/startup` olarak ayrilacak.
 - Faz 1'de zorunlu guvence alanlari config parse, migration, db baglantisi, repository akislari, transaction davranisi, error/response writer, `healthz`, `readyz` ve en az bir route/middleware akisi olacak.
 - Unit ve handler testleri hizli calisacak; integration testleri ayri komut veya tag ile kosturulecek.
-- Integration testler gercek PostgreSQL test veritabani kullanacak.
+- Integration testler gercek PostgreSQL test veritabani kullanacak; resmi calistirma yolu compose agi icindeki gecici Go container'i olacak, host tarafinda ise `.env` autoload ve test veritabani hazirlama fallback'i korunacak.
 - Yuksek coverage hedefi yerine kritik altyapi davranislarinin guvencesi hedeflenecek.
 
 Modul kayit modeli icin secilen yon su olacak:
@@ -107,7 +110,6 @@ Migration naming ve `sqlc` duzen standardi icin secilen yon su olacak:
 - Elle yazilan repository katmani generated koda ince bir adaptor olarak ayni modulde `store/repo.go` altinda bulunacak.
 - Timestamp tabanli migration adlandirmasi ile baslanmayacak.
 
-Hala netlestirilmesi gereken alan ilk fiziksel klasor agaci ve placeholder dosyalardir.
 `identity/auth` modulunun Faz 1 kapsami icin secilen yon su olacak:
 - Faz 1'de `identity/auth` tam auth feature setini bitirmeyecek; ama gercek bir domain modul olarak kurulacak.
 - Modul; route registration, handler-service-repo zinciri, `sqlc` akisi ve migration sahipligini gercekten gosterecek.
@@ -149,7 +151,7 @@ Surumleme ve faz tamamlama protokolu icin secilen yon su olacak:
 - Release etiketleri `release/v0.1.0-phase-01-infrastructure-foundation`, dokuman snapshot'lari `docs/v0.1.0-phase-01-infrastructure-foundation`, plan snapshot'lari gerekirse `plan/v0.1.0-phase-01-infrastructure-foundation` formatini izleyecek.
 - Repo referansi `https://github.com/Tokuchi61/Novascans` olarak kabul edilecek.
 
-Bu asama icin su an kritik acik soru kalmadi; bir sonraki mantikli adim Phase 1 planlarini alt islere bolmek.
+Bu asama icin kritik acik soru kalmadi; bir sonraki mantikli adim yeni milestone veya auth-core faz planlamasina gecmek.
 
 ## Constraints
 
@@ -170,18 +172,22 @@ Bu asama icin su an kritik acik soru kalmadi; bir sonraki mantikli adim Phase 1 
 | Router olarak chi secilecek | Hafif, composable ve `net/http` uyumlu bir omurga isteniyor | - Pending |
 | Veri erisim katmani olarak sqlc secilecek | SQL kontrolunu kaybetmeden type-safe kod uretimi isteniyor | - Pending |
 | Migration araci olarak goose secilecek | SQL-first akisla uyumlu, sade migration yonetimi gerekiyor | - Pending |
-| Faz 1 referans surumleri Go 1.26.1 ve PostgreSQL 18.3 olacak | Planlanan altyapi guncel stabil surumler uzerine kurulacak | - Pending |
+| Faz 1 toolchain politikasi Docker tarafinda Go 1.26.1 ve PostgreSQL 18.3 olacak; repo compatibility baseline'i `go 1.26.0` kalacak | Guncel patch toolchain kullanilirken repo uyumlulugu da korunmali | - Pending |
 | Modul organizasyonu kategori -> gercek modul seklinde kurulacak | Ust seviye gruplama saglarken mega-modul olusmasini engellemek gerekiyor | - Pending |
 | Config yalnizca env tabanli olacak | Container ve deploy ortamlarinda en sade ve dogal yaklasim bu | - Pending |
 | SQL kaynaklari merkezi, generated kod modul icinde tutulacak | SQL sahipligi ve modul sinirlari birlikte korunmali | - Pending |
 | EventBus interface'i ve in-memory implementasyon Faz 1'e dahil olacak | Moduller arasi gevsek baglanti icin broker'siz bir baslangic yeterli | - Pending |
-| Docker varsayilaninda api + postgres olacak, test veritabani ayni container icinde ayrilacak | Ilk asamada compose karmasasini buyutmadan test izolasyonu saglamak yeterli | - Pending |
+| Docker varsayilaninda api + postgres olacak, host `.env` localhost kullanirken api container'i `postgres` host override'i alacak | Host ve container akislari ayni env semasiyla ama dogru baglanti hedefiyle calismali | - Pending |
 | Bootstrap yapisi `cmd/api` + `internal/app` ayrimi ile kurulacak | Main ince kalmali, wiring tek merkezde toplanmali | - Pending |
 | Transaction yonetimi service/use-case seviyesinde olacak | Coklu repository akislarinda atomic davranis merkezi olarak koordine edilmeli | - Pending |
 | API hata ve response formati merkezi ve tek tip olacak | Sonraki tum moduller ayni sozlesmeye oturmali | - Pending |
 | Test tabani unit, http, integration ve smoke olarak ayrilacak | Hizli geri bildirim ile gercek altyapi guvencesi birlikte korunmali | - Pending |
 | Modul kayit modeli constructor + merkezi route registration ile kurulacak | Modul wiring'i dagilmadan buyume noktasi saglanmali | - Pending |
 | Config semasi `NOVASCANS_` prefix'i ve typed gruplu struct'lar ile kurulacak | Cevre degiskenleri net, tasinabilir ve parse edilebilir olmali | - Pending |
+| `.env` varsa otomatik yuklenecek | Lokal komutlar manuel env export gerektirmeden ayni sozlesmeyi kullanmali | - Pending |
+| Migration komutlari container ici `/app/migrate` binary'si ile calisacak | `localhost` bagimliligi ve host catisma riski kaldirilmali | - Pending |
+| Ayrı test veritabani init script ve tekrar cagrilabilir `test-db-ensure` akisi ile otomatik hazirlanacak | Test izolasyonu elle kurulum beklememeli | - Pending |
+| Validation paketi `go-playground/validator/v10` tabanli wrapper ile standardize edilecek | Faz 1 karari kodla birebir uyumlu kalmali | - Pending |
 | Temel middleware zinciri request-id ile baslayip metrics ile bitecek | Gozlemlenebilirlik ve hata guvencesi tum isteklerde tutarli olmali | - Pending |
 | API route yapisi `/api/v1/<module>` standardi ile kurulacak | Public API sozlesmesi fiziksel klasor yapisindan bagimsiz ve sade olmali | - Pending |
 | Migration naming sirali numara + kisa aciklama formatinda olacak | Okunabilir ve dallarda yonetilebilir bir migration akisi gerekli | - Pending |

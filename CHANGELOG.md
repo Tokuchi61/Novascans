@@ -39,5 +39,30 @@ Bu dosya proje degisikliklerini kaydeder.
 
 ## Unreleased
 
+- No unreleased changes yet.
+
+## 0.1.1 - 2026-03-17
+
+- Phase 1 sonrasi uyumlandirma duzeltmeleri yapildi; plan dokumanlari ile calisan kod arasindaki sapmalar kapatildi.
+- Resmi migration akisi hosta bagli `localhost` DSN yerine `cmd/migrate` binary'si ve container ici `/app/migrate` komutu uzerinden standartlastirildi.
+- `Dockerfile` guncellendi; `api` yanina `migrate` binary'si eklendi, migration dosyalari runtime image'a kopyalandi ve build toolchain `golang:1.26.1-alpine` olarak pinlendi.
+- `.dockerignore` eklendi; `.git`, `.planning`, `.codex`, `.env` ve diger gelistirme artifaktlari artik build context'e girmiyor.
+- Docker gelistirme akisi host ve container icin ayrildi: `.env.example` host tarafinda `localhost` baz aliyor, `docker-compose.yml` ise `api` servisi icin `NOVASCANS_DB_HOST=postgres` override ediyor.
+- Ayni PostgreSQL container'i icinde `novascans_test` veritabani icin init script eklendi ve `test-db-ensure` akisi ile tekrar cagirilabilir hale getirildi.
+- Integration testlerin resmi yolu compose agi icindeki gecici Go 1.26.1 container'i olacak sekilde netlestirildi; host tarafinda da `.env` autoload ve test DB olusturma fallback'i eklendi.
+- `internal/platform/validation` paketi `go-playground/validator/v10` tabanli wrapper'a donusturuldu; mevcut error mesaji sozlesmesi korundu.
+- `config.LoadFromEnv()` artik `.env` dosyasini varsa otomatik yukluyor; boylece lokal `go test`, `go run` ve yardimci komutlar ayni env sozlesmesini paylasiyor.
+- Dogrulama tekrarlandi: `go test ./...`, `go test -tags=integration ./...`, Docker agi icinden integration test calistirmasi, `docker compose up -d --build`, container ici `migrate status/up`, `/readyz`, `/metrics` ve auth user/session akisi yeniden dogrulandi.
+
+## 0.1.0 - 2026-03-17
+
 - Phase 1 planlama kurallari ve versiyonlama disiplini tanimlandi.
 - Git branch, tag ve dokuman snapshot isimlendirme standardi sikilastirildi.
+- `01-01` kapsaminda Go modul iskeleti, `cmd/api` entrypoint'i, `internal/app` bootstrap akisi, ortak modul kontrati ve `identity/auth` ornek modul zinciri eklendi.
+- `01-02` kapsaminda `NOVASCANS_` env semasi, fail-fast config yukleyici, ilk PostgreSQL baglanti paketi, `.env.example`, `Dockerfile`, `docker-compose.yml`, `.env`, `Makefile` ve `VERSION` dosyasi eklendi.
+- `01-03` kapsaminda `chi` router zinciri, `healthz`, `readyz`, `metrics`, request-id, recover, timeout, logger, metrics middleware'leri ile merkezi error/response yapisi eklendi.
+- `01-03` kapsaminda `identity/auth` modulu `ping`, `user create/read`, `session create/revoke` endpointleriyle calisir hale getirildi.
+- `01-04` kapsaminda `users`, `auth_password_credentials`, `auth_sessions` migrationlari, schema SQL'i, `sqlc.yaml`, query dosyalari, generated `sqlc` kodu ve PostgreSQL repository/transaction zemini eklendi.
+- `01-05` kapsaminda Prometheus uyumlu metrik cikisi, test komut ayrimi, integration test iskeleti ve semver/git naming teslim disiplini tamamlandi.
+- Smoke, unit ve integration-tag test yollari calistirildi; Docker compose dosyasi `docker compose config` ile dogrulandi.
+- Canli dogrulama tamamlandi: `docker compose up -d --build` calistirildi, goose migration'i compose agi icinden uygulandi, `readyz`, `metrics` ve auth user/session akisi gercek container'lar uzerinde dogrulandi.

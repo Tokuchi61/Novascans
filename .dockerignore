@@ -1,10 +1,12 @@
-.codex/
 .cache/
+.codex/
+.git/
+.planning/
 .env
 .env.local
 .env.*.local
 bin/
+coverage.out
 dist/
 tmp/
-coverage.out
 *.log
