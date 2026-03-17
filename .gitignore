@@ -1,0 +1,9 @@
+.codex/
+.env
+.env.local
+.env.*.local
+bin/
+dist/
+tmp/
+coverage.out
+*.log
