@@ -1,15 +1,21 @@
 package domain
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Principal struct {
-	IsGuest        bool
-	UserID         *uuid.UUID
-	SessionID      *uuid.UUID
-	Email          string
-	BaseRole       string
-	SubRoles       []SubRole
-	PermissionKeys []string
+	IsGuest         bool
+	UserID          *uuid.UUID
+	SessionID       *uuid.UUID
+	Email           string
+	BaseRole        string
+	Status          string
+	EmailVerifiedAt *time.Time
+	SubRoles        []SubRole
+	PermissionKeys  []string
 }
 
 func GuestPrincipal() Principal {

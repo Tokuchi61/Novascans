@@ -42,12 +42,14 @@ func (service *Service) ResolvePrincipal(ctx context.Context, user authdomain.Us
 	}
 
 	return domain.Principal{
-		UserID:         &user.ID,
-		SessionID:      &sessionID,
-		Email:          user.Email,
-		BaseRole:       user.BaseRole,
-		SubRoles:       subRoles,
-		PermissionKeys: permissions,
+		UserID:          &user.ID,
+		SessionID:       &sessionID,
+		Email:           user.Email,
+		BaseRole:        user.BaseRole,
+		Status:          user.Status,
+		EmailVerifiedAt: user.EmailVerifiedAt,
+		SubRoles:        subRoles,
+		PermissionKeys:  permissions,
 	}, nil
 }
 

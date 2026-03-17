@@ -10,7 +10,7 @@ import (
 func buildModules(deps moduleshared.Dependencies) []moduleshared.Module {
 	auth := authmodule.NewModule(deps)
 	access := accessmodule.NewModule(deps, auth.Service())
-	account := accountmodule.NewModule(deps, auth.Service())
+	account := accountmodule.NewModule(deps, access.Guard())
 	auth.Service().SetAccountProvisioner(account.Service())
 
 	return []moduleshared.Module{

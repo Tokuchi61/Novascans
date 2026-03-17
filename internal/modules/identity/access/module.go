@@ -22,7 +22,7 @@ func NewModule(deps moduleshared.Dependencies, authenticator authapp.Authenticat
 
 	if deps.DB != nil {
 		repo = store.NewPostgresRepository(deps.DB)
-		uow = store.NewPostgresUnitOfWork(deps.DB)
+		uow = store.NewPostgresUnitOfWork(deps.DB, deps.TxManager)
 	} else {
 		memoryRepository := store.NewMemoryRepository()
 		repo = memoryRepository

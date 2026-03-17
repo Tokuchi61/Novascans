@@ -22,6 +22,7 @@ import (
 	accountapp "github.com/Tokuchi61/Novascans/internal/modules/user/account/app"
 	accountstore "github.com/Tokuchi61/Novascans/internal/modules/user/account/store"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
+	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
 
 const seedPassword = "SeedPass123!"
@@ -58,7 +59,9 @@ func run(ctx context.Context, cfg config.Config) error {
 
 	authRepo := authstore.NewPostgresRepository(db)
 	accessRepo := accessstore.NewPostgresRepository(db)
-	accountService := accountapp.NewService(accountstore.NewPostgresRepository(db), accountstore.NewPostgresUnitOfWork(db))
+	txManager := platformdb.NewTxManager(db)
+	accountRepo := accountstore.NewPostgresRepository(db)
+	accountService := accountapp.NewService(accountRepo, accountstore.NewPostgresUnitOfWork(accountRepo, txManager))
 
 	permissions := []accessdomain.Permission{
 		newPermission("manga.create", "Create manga entries"),
@@ -119,7 +122,6 @@ func run(ctx context.Context, cfg config.Config) error {
 	}
 
 	slog.Info("seed completed",
-		"seed_password", seedPassword,
 		"user_count", len(users),
 		"sub_role_count", len(subRoles),
 	)

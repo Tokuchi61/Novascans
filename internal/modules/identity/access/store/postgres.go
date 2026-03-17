@@ -18,15 +18,19 @@ type PostgresRepository struct {
 }
 
 type PostgresUnitOfWork struct {
-	db *sql.DB
+	db        *sql.DB
+	txManager platformdb.TxManager
 }
 
 func NewPostgresRepository(db *sql.DB) *PostgresRepository {
 	return newPostgresRepository(accesssqlc.New(db))
 }
 
-func NewPostgresUnitOfWork(db *sql.DB) *PostgresUnitOfWork {
-	return &PostgresUnitOfWork{db: db}
+func NewPostgresUnitOfWork(db *sql.DB, txManager platformdb.TxManager) *PostgresUnitOfWork {
+	return &PostgresUnitOfWork{
+		db:        db,
+		txManager: txManager,
+	}
 }
 
 func newPostgresRepository(queries *accesssqlc.Queries) *PostgresRepository {
@@ -230,26 +234,13 @@ func (repo *PostgresRepository) UpdateUserBaseRole(ctx context.Context, userID u
 }
 
 func (uow *PostgresUnitOfWork) WithinTransaction(ctx context.Context, fn func(ctx context.Context, repo accessapp.Repository) error) error {
-	tx, err := uow.db.BeginTx(ctx, nil)
-	if err != nil {
-		return accessapp.Internal("begin transaction failed", err)
+	if uow.txManager == nil {
+		return fn(ctx, newPostgresRepository(accesssqlc.New(uow.db)))
 	}
 
-	ctx = platformdb.ContextWithTx(ctx, tx)
-	repo := newPostgresRepository(accesssqlc.New(tx))
-	if err := fn(ctx, repo); err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return accessapp.Internal("rollback transaction failed", rollbackErr)
-		}
-
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return accessapp.Internal("commit transaction failed", err)
-	}
-
-	return nil
+	return uow.txManager.WithinTransaction(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		return fn(ctx, newPostgresRepository(accesssqlc.New(tx)))
+	})
 }
 
 func mapPermission(row accesssqlc.AccessPermission) domain.Permission {

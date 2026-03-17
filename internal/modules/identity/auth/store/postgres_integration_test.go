@@ -18,6 +18,7 @@ import (
 	authapp "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/app"
 	"github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
+	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
 
 func TestPostgresRepositoryAndTxManager(t *testing.T) {
@@ -53,7 +54,7 @@ func TestPostgresRepositoryAndTxManager(t *testing.T) {
 	resetTables(t, db)
 
 	repo := NewPostgresRepository(db)
-	unitOfWork := NewPostgresUnitOfWork(db)
+	unitOfWork := NewPostgresUnitOfWork(db, platformdb.NewTxManager(db))
 
 	now := time.Now().UTC()
 	userID := uuid.New()

@@ -17,15 +17,19 @@ type PostgresRepository struct {
 }
 
 type PostgresUnitOfWork struct {
-	db *sql.DB
+	repo      *PostgresRepository
+	txManager platformdb.TxManager
 }
 
 func NewPostgresRepository(db *sql.DB) *PostgresRepository {
 	return &PostgresRepository{db: db}
 }
 
-func NewPostgresUnitOfWork(db *sql.DB) *PostgresUnitOfWork {
-	return &PostgresUnitOfWork{db: db}
+func NewPostgresUnitOfWork(repo *PostgresRepository, txManager platformdb.TxManager) *PostgresUnitOfWork {
+	return &PostgresUnitOfWork{
+		repo:      repo,
+		txManager: txManager,
+	}
 }
 
 func (repo *PostgresRepository) CreateProfile(ctx context.Context, profile domain.Profile) (domain.Profile, error) {
@@ -172,26 +176,13 @@ func (repo *PostgresRepository) UpdatePrivacySettings(ctx context.Context, setti
 }
 
 func (uow *PostgresUnitOfWork) WithinTransaction(ctx context.Context, fn func(ctx context.Context, repo accountapp.Repository) error) error {
-	tx, err := uow.db.BeginTx(ctx, nil)
-	if err != nil {
-		return accountapp.Internal("begin transaction failed", err)
+	if uow.txManager == nil {
+		return fn(ctx, uow.repo)
 	}
 
-	ctx = platformdb.ContextWithTx(ctx, tx)
-	repo := &PostgresRepository{db: uow.db}
-	if err := fn(ctx, repo); err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return accountapp.Internal("rollback transaction failed", rollbackErr)
-		}
-
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return accountapp.Internal("commit transaction failed", err)
-	}
-
-	return nil
+	return uow.txManager.WithinTransaction(ctx, func(ctx context.Context, _ *sql.Tx) error {
+		return fn(ctx, uow.repo)
+	})
 }
 
 func (repo *PostgresRepository) queries(ctx context.Context) *accountsqlc.Queries {

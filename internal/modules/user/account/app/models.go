@@ -3,7 +3,6 @@ package app
 import (
 	"github.com/google/uuid"
 
-	authdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	"github.com/Tokuchi61/Novascans/internal/modules/user/account/domain"
 )
 
@@ -13,7 +12,6 @@ type Viewer struct {
 }
 
 type AccountData struct {
-	User     authdomain.User
 	Profile  domain.Profile
 	Settings domain.Settings
 	Privacy  domain.PrivacySettings

@@ -3,7 +3,7 @@ package http
 import (
 	"time"
 
-	authdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
 	accountapp "github.com/Tokuchi61/Novascans/internal/modules/user/account/app"
 	"github.com/Tokuchi61/Novascans/internal/modules/user/account/domain"
 )
@@ -49,25 +49,28 @@ type privacyResponse struct {
 	UpdatedAt         string `json:"updated_at"`
 }
 
-func mapAccountResponse(account accountapp.AccountData) accountResponse {
+func mapAccountResponse(principal accessdomain.Principal, account accountapp.AccountData) accountResponse {
 	return accountResponse{
-		User:     mapAccountUserResponse(account.User),
+		User:     mapAccountUserResponse(principal),
 		Profile:  mapProfileResponse(account.Profile),
 		Settings: mapSettingsResponse(account.Settings),
 		Privacy:  mapPrivacyResponse(account.Privacy),
 	}
 }
 
-func mapAccountUserResponse(user authdomain.User) accountUserResponse {
+func mapAccountUserResponse(principal accessdomain.Principal) accountUserResponse {
 	response := accountUserResponse{
-		ID:       user.ID.String(),
-		Email:    user.Email,
-		BaseRole: user.BaseRole,
-		Status:   user.Status,
+		Email:    principal.Email,
+		BaseRole: principal.BaseRole,
+		Status:   principal.Status,
 	}
 
-	if user.EmailVerifiedAt != nil {
-		response.EmailVerifiedAt = user.EmailVerifiedAt.UTC().Format(time.RFC3339)
+	if principal.UserID != nil {
+		response.ID = principal.UserID.String()
+	}
+
+	if principal.EmailVerifiedAt != nil {
+		response.EmailVerifiedAt = principal.EmailVerifiedAt.UTC().Format(time.RFC3339)
 	}
 
 	return response

@@ -20,6 +20,7 @@ import (
 	accountapp "github.com/Tokuchi61/Novascans/internal/modules/user/account/app"
 	accountstore "github.com/Tokuchi61/Novascans/internal/modules/user/account/store"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
+	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
 
 type failingProvisioner struct{}
@@ -34,10 +35,11 @@ func TestRegisterCreatesAccountDefaults(t *testing.T) {
 
 	resetTables(t, db)
 
+	txManager := platformdb.NewTxManager(db)
 	authRepo := authstore.NewPostgresRepository(db)
-	authUow := authstore.NewPostgresUnitOfWork(db)
+	authUow := authstore.NewPostgresUnitOfWork(db, txManager)
 	accountRepo := accountstore.NewPostgresRepository(db)
-	accountUow := accountstore.NewPostgresUnitOfWork(db)
+	accountUow := accountstore.NewPostgresUnitOfWork(accountRepo, txManager)
 	accountService := accountapp.NewService(accountRepo, accountUow)
 
 	service := authapp.NewService(authRepo, authUow, nil, testServiceConfig(), accountService)
@@ -76,8 +78,9 @@ func TestRegisterRollsBackWhenAccountProvisionFails(t *testing.T) {
 
 	resetTables(t, db)
 
+	txManager := platformdb.NewTxManager(db)
 	authRepo := authstore.NewPostgresRepository(db)
-	authUow := authstore.NewPostgresUnitOfWork(db)
+	authUow := authstore.NewPostgresUnitOfWork(db, txManager)
 	service := authapp.NewService(authRepo, authUow, nil, testServiceConfig(), failingProvisioner{})
 
 	if _, err := service.Register(t.Context(), authapp.RegisterInput{

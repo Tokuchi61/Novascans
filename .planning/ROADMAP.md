@@ -88,7 +88,7 @@ Plans:
   5. Public profile okuma davranisi username uzerinden calisir ve privacy kurallariyla uyumludur.
   6. `wall`, `friends`, `follow`, `dm`, `library` ve `history` bu faza dahil edilmez.
 **Plans**: 5 plans
-**Post-completion maintenance**: `0.3.0` ile account tablolari, register bootstrap, own-account API'leri, public profile ve privacy davranisi tamamlandi; seed ve canli smoke akislari account verisiyle hizalandi.
+**Post-completion maintenance**: `0.3.0` ile account tablolari, register bootstrap, own-account API'leri, public profile ve privacy davranisi tamamlandi; seed ve canli smoke akislari account verisiyle hizalandi. `0.3.1` patch'i ile account modulu ortak access guard uzerine tasindi, transaction standardi ortak `TxManager` kullanimiyla hizalandi ve Faz 3 planning dokuman drift'i kapatildi.
 
 Plans:
 - [x] 03-01: `user/account` domain sinirini netlestir; `profile`, `settings`, `privacy` veri modelini ve auth ile entegrasyon kurallarini sabitle

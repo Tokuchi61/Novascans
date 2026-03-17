@@ -22,7 +22,7 @@
 - [x] **DATA-01**: PostgreSQL baglantisi, migration akisi ve lokal veritabani yasam dongusu Docker icinde standart hale gelir.
 - [x] **DATA-02**: Secilen query katmani sonraki auth, user ve manga modullerine uygun bir veri erisim modeli sunar.
 - [x] **DATA-03**: Repository/service sinirlari, transaction kurallari ve veri erisim konvansiyonlari yazili hale getirilir.
-- [x] **DATA-04**: SQL kaynaklari `db/queries/<kategori>/<modul>` yapisinda saklanir ve `sqlc` generated kodu ilgili modullerde konumlanir.
+- [x] **DATA-04**: SQL kaynaklari `db/queries/<kategori>/<modul>` yapisinda saklanir ve `sqlc` generated kodu merkezi `internal/gen/sqlc/<kategori>/<modul>` agacinda konumlanir.
 - [x] **DATA-05**: Transaction yonetimi service/use-case seviyesinde standartlastirilir ve repository katmani gizli transaction acmaz.
 - [x] **DATA-06**: Migration dosyalari sirali numara + kisa aciklama standardi ile yonetilir.
 - [x] **DATA-07**: `identity/auth` icin ilk veri zemini `users`, `auth_password_credentials` ve `auth_sessions` tablolarini ayri sorumluluklarla kurar.

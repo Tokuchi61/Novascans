@@ -41,6 +41,15 @@ Bu dosya proje degisikliklerini kaydeder.
 
 - No unreleased changes yet.
 
+## 0.3.1 - 2026-03-17
+
+- Faz 3 sonrasi audit bulgulari kapatildi; `user/account` modulu artik ayri auth middleware yerine ortak `identity/access` guard ve principal zincirini kullaniyor.
+- Account own-endpoint akislari ortak principal cozumleme uzerine tasindi; public profile davranisi ayni access guard'in guest/authenticated cozumlemesiyle calismaya devam ediyor.
+- Auth, access ve account PostgreSQL unit-of-work katmanlari ortak `platform/db` `TxManager` uzerinden hizalandi; bootstrap tarafinda kurulan transaction standardi artik moduller tarafindan gercekten kullaniliyor.
+- Planning dokumanlari guncellendi: Faz 3 context durumu tamamlandi olarak duzeltildi, `sqlc` generated kod konumu merkezi `internal/gen/sqlc/...` agaciyla hizalandi ve roadmap'e Phase 3 post-audit patch notu eklendi.
+- Seed komutu artik sabit gelistirme sifresini log'a basmiyor.
+- Dogrulama tekrarlandi: `go test ./...`, `go test -tags=integration ./...`, `docker compose exec -T api /app/migrate up`, `docker compose exec -T api /app/seed`, seeded admin ile `account/me`, yeni register kullanicisi ile account bootstrap ve privacy smoke akislari yeniden dogrulandi.
+
 ## 0.3.0 - 2026-03-17
 
 - Phase 3 tamamlandi; yeni `user/account` modulu eklendi ve auth kimligi ile account alanlari arasindaki sinir netlestirildi.

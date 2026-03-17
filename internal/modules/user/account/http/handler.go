@@ -1,14 +1,15 @@
 package http
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
 	"log/slog"
 	nethttp "net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
+	accesshttp "github.com/Tokuchi61/Novascans/internal/modules/identity/access/http"
 	accountapp "github.com/Tokuchi61/Novascans/internal/modules/user/account/app"
 	platformhttp "github.com/Tokuchi61/Novascans/internal/platform/http"
 	"github.com/Tokuchi61/Novascans/internal/platform/validation"
@@ -29,29 +30,29 @@ func NewHandler(logger *slog.Logger, validator *validation.Validator, service *a
 }
 
 func (h *Handler) Me(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
 	}
 
-	account, err := h.service.GetAccount(r.Context(), currentUser.User)
+	account, err := h.service.GetAccount(r.Context(), *principal.UserID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
 	}
 
-	platformhttp.WriteData(w, nethttp.StatusOK, mapAccountResponse(account))
+	platformhttp.WriteData(w, nethttp.StatusOK, mapAccountResponse(principal, account))
 }
 
 func (h *Handler) GetOwnProfile(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
 	}
 
-	profile, err := h.service.GetProfile(r.Context(), currentUser.User.ID)
+	profile, err := h.service.GetProfile(r.Context(), *principal.UserID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -61,7 +62,7 @@ func (h *Handler) GetOwnProfile(w nethttp.ResponseWriter, r *nethttp.Request) {
 }
 
 func (h *Handler) UpdateProfile(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
@@ -78,7 +79,7 @@ func (h *Handler) UpdateProfile(w nethttp.ResponseWriter, r *nethttp.Request) {
 		return
 	}
 
-	profile, err := h.service.UpdateProfile(r.Context(), request.ToInput(currentUser.User.ID))
+	profile, err := h.service.UpdateProfile(r.Context(), request.ToInput(*principal.UserID))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -88,13 +89,13 @@ func (h *Handler) UpdateProfile(w nethttp.ResponseWriter, r *nethttp.Request) {
 }
 
 func (h *Handler) GetSettings(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
 	}
 
-	settings, err := h.service.GetSettings(r.Context(), currentUser.User.ID)
+	settings, err := h.service.GetSettings(r.Context(), *principal.UserID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -104,7 +105,7 @@ func (h *Handler) GetSettings(w nethttp.ResponseWriter, r *nethttp.Request) {
 }
 
 func (h *Handler) UpdateSettings(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
@@ -121,7 +122,7 @@ func (h *Handler) UpdateSettings(w nethttp.ResponseWriter, r *nethttp.Request) {
 		return
 	}
 
-	settings, err := h.service.UpdateSettings(r.Context(), request.ToInput(currentUser.User.ID))
+	settings, err := h.service.UpdateSettings(r.Context(), request.ToInput(*principal.UserID))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -131,13 +132,13 @@ func (h *Handler) UpdateSettings(w nethttp.ResponseWriter, r *nethttp.Request) {
 }
 
 func (h *Handler) GetPrivacy(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
 	}
 
-	privacy, err := h.service.GetPrivacy(r.Context(), currentUser.User.ID)
+	privacy, err := h.service.GetPrivacy(r.Context(), *principal.UserID)
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -147,7 +148,7 @@ func (h *Handler) GetPrivacy(w nethttp.ResponseWriter, r *nethttp.Request) {
 }
 
 func (h *Handler) UpdatePrivacy(w nethttp.ResponseWriter, r *nethttp.Request) {
-	currentUser, ok := CurrentUser(r.Context())
+	principal, ok := currentPrincipal(r.Context())
 	if !ok {
 		platformhttp.WriteError(w, platformhttp.Unauthorized("authentication required"))
 		return
@@ -164,7 +165,7 @@ func (h *Handler) UpdatePrivacy(w nethttp.ResponseWriter, r *nethttp.Request) {
 		return
 	}
 
-	privacy, err := h.service.UpdatePrivacy(r.Context(), request.ToInput(currentUser.User.ID))
+	privacy, err := h.service.UpdatePrivacy(r.Context(), request.ToInput(*principal.UserID))
 	if err != nil {
 		writeServiceError(w, err)
 		return
@@ -175,9 +176,9 @@ func (h *Handler) UpdatePrivacy(w nethttp.ResponseWriter, r *nethttp.Request) {
 
 func (h *Handler) GetPublicProfile(w nethttp.ResponseWriter, r *nethttp.Request) {
 	viewer := accountapp.Viewer{}
-	if currentUser, ok := CurrentUser(r.Context()); ok {
+	if principal, ok := accesshttp.CurrentPrincipal(r.Context()); ok && principal.IsAuthenticated() {
 		viewer.Authenticated = true
-		viewer.UserID = &currentUser.User.ID
+		viewer.UserID = principal.UserID
 	}
 
 	profile, err := h.service.GetPublicProfile(r.Context(), chi.URLParam(r, "username"), viewer)
@@ -189,21 +190,11 @@ func (h *Handler) GetPublicProfile(w nethttp.ResponseWriter, r *nethttp.Request)
 	platformhttp.WriteData(w, nethttp.StatusOK, mapProfileResponse(profile))
 }
 
-func bearerToken(r *nethttp.Request) (string, error) {
-	value := strings.TrimSpace(r.Header.Get("Authorization"))
-	if value == "" {
-		return "", platformhttp.Unauthorized("missing authorization header")
+func currentPrincipal(ctx context.Context) (accessdomain.Principal, bool) {
+	principal, ok := accesshttp.CurrentPrincipal(ctx)
+	if !ok || !principal.IsAuthenticated() || principal.UserID == nil {
+		return accessdomain.Principal{}, false
 	}
 
-	parts := strings.SplitN(value, " ", 2)
-	if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-		return "", errors.New("invalid authorization header")
-	}
-
-	token := strings.TrimSpace(parts[1])
-	if token == "" {
-		return "", errors.New("missing bearer token")
-	}
-
-	return token, nil
+	return principal, true
 }

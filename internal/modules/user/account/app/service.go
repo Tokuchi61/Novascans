@@ -104,24 +104,23 @@ func (service *Service) ProvisionDefaults(ctx context.Context, user authdomain.U
 	})
 }
 
-func (service *Service) GetAccount(ctx context.Context, user authdomain.User) (AccountData, error) {
-	profile, err := service.repo.GetProfileByUserID(ctx, user.ID)
+func (service *Service) GetAccount(ctx context.Context, userID uuid.UUID) (AccountData, error) {
+	profile, err := service.repo.GetProfileByUserID(ctx, userID)
 	if err != nil {
 		return AccountData{}, service.wrapNotFound("account profile not found", "failed to fetch account profile", err)
 	}
 
-	settings, err := service.repo.GetSettingsByUserID(ctx, user.ID)
+	settings, err := service.repo.GetSettingsByUserID(ctx, userID)
 	if err != nil {
 		return AccountData{}, service.wrapNotFound("account settings not found", "failed to fetch account settings", err)
 	}
 
-	privacy, err := service.repo.GetPrivacySettingsByUserID(ctx, user.ID)
+	privacy, err := service.repo.GetPrivacySettingsByUserID(ctx, userID)
 	if err != nil {
 		return AccountData{}, service.wrapNotFound("account privacy settings not found", "failed to fetch account privacy settings", err)
 	}
 
 	return AccountData{
-		User:     user,
 		Profile:  profile,
 		Settings: settings,
 		Privacy:  privacy,

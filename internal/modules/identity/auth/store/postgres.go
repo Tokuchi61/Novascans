@@ -18,15 +18,19 @@ type PostgresRepository struct {
 }
 
 type PostgresUnitOfWork struct {
-	db *sql.DB
+	db        *sql.DB
+	txManager platformdb.TxManager
 }
 
 func NewPostgresRepository(db *sql.DB) *PostgresRepository {
 	return newPostgresRepository(authsqlc.New(db))
 }
 
-func NewPostgresUnitOfWork(db *sql.DB) *PostgresUnitOfWork {
-	return &PostgresUnitOfWork{db: db}
+func NewPostgresUnitOfWork(db *sql.DB, txManager platformdb.TxManager) *PostgresUnitOfWork {
+	return &PostgresUnitOfWork{
+		db:        db,
+		txManager: txManager,
+	}
 }
 
 func newPostgresRepository(queries *authsqlc.Queries) *PostgresRepository {
@@ -276,26 +280,13 @@ func (repo *PostgresRepository) InvalidatePasswordResetTokensForUser(ctx context
 }
 
 func (uow *PostgresUnitOfWork) WithinTransaction(ctx context.Context, fn func(ctx context.Context, repo authapp.Repository) error) error {
-	tx, err := uow.db.BeginTx(ctx, nil)
-	if err != nil {
-		return authapp.Internal("begin transaction failed", err)
+	if uow.txManager == nil {
+		return fn(ctx, newPostgresRepository(authsqlc.New(uow.db)))
 	}
 
-	ctx = platformdb.ContextWithTx(ctx, tx)
-	repo := newPostgresRepository(authsqlc.New(tx))
-	if err := fn(ctx, repo); err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return authapp.Internal("rollback transaction failed", rollbackErr)
-		}
-
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return authapp.Internal("commit transaction failed", err)
-	}
-
-	return nil
+	return uow.txManager.WithinTransaction(ctx, func(ctx context.Context, tx *sql.Tx) error {
+		return fn(ctx, newPostgresRepository(authsqlc.New(tx)))
+	})
 }
 
 func mapUser(row authsqlc.User) domain.User {
