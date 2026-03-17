@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
 	authdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	accountapp "github.com/Tokuchi61/Novascans/internal/modules/user/account/app"
 	"github.com/Tokuchi61/Novascans/internal/modules/user/account/domain"
@@ -20,16 +21,16 @@ func TestProvisionDefaultsGeneratesUniqueUsername(t *testing.T) {
 	userOne := authdomain.User{
 		ID:        uuid.New(),
 		Email:     "reader@example.com",
-		BaseRole:  "user",
-		Status:    "active",
+		BaseRole:  accessdomain.BaseRoleUser,
+		Status:    authdomain.StatusActive,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
 	userTwo := authdomain.User{
 		ID:        uuid.New(),
 		Email:     "reader@other.example",
-		BaseRole:  "user",
-		Status:    "active",
+		BaseRole:  accessdomain.BaseRoleUser,
+		Status:    authdomain.StatusActive,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -77,8 +78,8 @@ func TestGetPublicProfileHonorsVisibility(t *testing.T) {
 	user := authdomain.User{
 		ID:        uuid.New(),
 		Email:     "owner@example.com",
-		BaseRole:  "user",
-		Status:    "active",
+		BaseRole:  accessdomain.BaseRoleUser,
+		Status:    authdomain.StatusActive,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}

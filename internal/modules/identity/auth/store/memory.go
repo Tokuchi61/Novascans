@@ -94,7 +94,7 @@ func (repo *MemoryRepository) MarkUserEmailVerified(_ context.Context, userID uu
 	}
 
 	verifiedAt = verifiedAt.UTC()
-	user.Status = authapp.StatusActive
+	user.Status = domain.StatusActive
 	user.EmailVerifiedAt = &verifiedAt
 	user.UpdatedAt = verifiedAt
 	repo.users[userID] = user

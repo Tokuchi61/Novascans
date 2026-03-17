@@ -41,6 +41,16 @@ Bu dosya proje degisikliklerini kaydeder.
 
 - No unreleased changes yet.
 
+## 0.3.2 - 2026-03-17
+
+- Faz 3 sonrasi daha genis tutarlilik taramasi yapildi ve servis katmaninda birikmeye baslayan domain policy/sabitleri ayrildi.
+- `identity/auth` durum sabitleri `domain/status.go` altina tasindi; register akisinda access token uretimi tek kaynaga indirildi ve ayni oturum icin cift/farkli timestamp ile token uretme tekrari kaldirildi.
+- `identity/access` base role sabitleri `domain/roles.go` altinda merkezilestirildi; route korumalari, servis dogrulamasi, seed verileri ve testler bu ortak sabitlerle hizalandi.
+- `user/account` username, profil boyut limitleri, locale/timezone limitleri ve privacy gorunurluk kurallari servis dosyasindan alinip `domain/*_rules.go` ve `app/defaults.go` dosyalarina tasindi.
+- `user/account` HTTP ve uygulama katmanlari artik ayni username normalize/validate kurallarini paylasiyor; servis icinde kalmis eski helper referansi temizlendi.
+- Seed ve test verilerindeki ham `user/moderator/admin` ve `active` string tekrarlarinin kritik kismi ortak domain sabitlerine baglandi.
+- Dogrulama tekrarlandi: `go test ./...`, `go test -tags=integration ./...`, canli `/readyz` kontrolu.
+
 ## 0.3.1 - 2026-03-17
 
 - Faz 3 sonrasi audit bulgulari kapatildi; `user/account` modulu artik ayri auth middleware yerine ortak `identity/access` guard ve principal zincirini kullaniyor.

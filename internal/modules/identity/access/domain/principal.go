@@ -21,7 +21,7 @@ type Principal struct {
 func GuestPrincipal() Principal {
 	return Principal{
 		IsGuest:  true,
-		BaseRole: "guest",
+		BaseRole: BaseRoleGuest,
 	}
 }
 
@@ -30,7 +30,7 @@ func (principal Principal) IsAuthenticated() bool {
 }
 
 func (principal Principal) HasBaseRole(role string) bool {
-	if principal.BaseRole == "admin" {
+	if principal.BaseRole == BaseRoleAdmin {
 		return true
 	}
 
@@ -38,7 +38,7 @@ func (principal Principal) HasBaseRole(role string) bool {
 }
 
 func (principal Principal) HasAnyBaseRole(roles ...string) bool {
-	if principal.BaseRole == "admin" {
+	if principal.BaseRole == BaseRoleAdmin {
 		return true
 	}
 
@@ -52,7 +52,7 @@ func (principal Principal) HasAnyBaseRole(roles ...string) bool {
 }
 
 func (principal Principal) HasPermission(permission string) bool {
-	if principal.BaseRole == "admin" {
+	if principal.BaseRole == BaseRoleAdmin {
 		return true
 	}
 

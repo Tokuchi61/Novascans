@@ -27,3 +27,20 @@ func IsValidProfileVisibility(value string) bool {
 		return false
 	}
 }
+
+func CanViewProfile(ownerID uuid.UUID, visibility string, viewerID *uuid.UUID, authenticated bool) bool {
+	if viewerID != nil && *viewerID == ownerID {
+		return true
+	}
+
+	switch visibility {
+	case ProfileVisibilityPublic:
+		return true
+	case ProfileVisibilityAuthenticated:
+		return authenticated
+	case ProfileVisibilityPrivate:
+		return false
+	default:
+		return false
+	}
+}

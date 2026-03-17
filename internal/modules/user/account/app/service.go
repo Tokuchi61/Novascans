@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"strings"
 	"time"
 
@@ -13,21 +12,6 @@ import (
 	"github.com/Tokuchi61/Novascans/internal/modules/user/account/domain"
 	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
-
-const (
-	defaultLocale          = "en-US"
-	defaultTimezone        = "UTC"
-	maxUsernameLength      = 32
-	minUsernameLength      = 3
-	maxDisplayNameLength   = 64
-	maxBioLength           = 280
-	maxAssetPathLength     = 255
-	maxLocaleLength        = 16
-	maxTimezoneLength      = 64
-	defaultProfileSuffixID = 8
-)
-
-var usernamePattern = regexp.MustCompile(`^[a-z0-9._-]{3,32}$`)
 
 type Service struct {
 	repo       Repository
@@ -150,8 +134,8 @@ func (service *Service) UpdateProfile(ctx context.Context, input UpdateProfileIn
 		}
 
 		if input.Username != nil {
-			username := normalizeUsernameInput(*input.Username)
-			if !isValidUsername(username) {
+			username := domain.NormalizeUsername(*input.Username)
+			if !domain.IsValidUsername(username) {
 				return BadRequest("username must be 3-32 chars and contain only lowercase letters, numbers, dots, underscores or hyphens", nil)
 			}
 
@@ -172,8 +156,8 @@ func (service *Service) UpdateProfile(ctx context.Context, input UpdateProfileIn
 				return BadRequest("display name is required", nil)
 			}
 
-			if len(displayName) > maxDisplayNameLength {
-				return BadRequest(fmt.Sprintf("display name must be at most %d characters", maxDisplayNameLength), nil)
+			if len(displayName) > domain.DisplayNameMaxLength {
+				return BadRequest(fmt.Sprintf("display name must be at most %d characters", domain.DisplayNameMaxLength), nil)
 			}
 
 			profile.DisplayName = displayName
@@ -181,8 +165,8 @@ func (service *Service) UpdateProfile(ctx context.Context, input UpdateProfileIn
 
 		if input.Bio != nil {
 			bio := strings.TrimSpace(*input.Bio)
-			if len(bio) > maxBioLength {
-				return BadRequest(fmt.Sprintf("bio must be at most %d characters", maxBioLength), nil)
+			if len(bio) > domain.BioMaxLength {
+				return BadRequest(fmt.Sprintf("bio must be at most %d characters", domain.BioMaxLength), nil)
 			}
 
 			profile.Bio = bio
@@ -190,8 +174,8 @@ func (service *Service) UpdateProfile(ctx context.Context, input UpdateProfileIn
 
 		if input.AvatarPath != nil {
 			avatarPath := strings.TrimSpace(*input.AvatarPath)
-			if len(avatarPath) > maxAssetPathLength {
-				return BadRequest(fmt.Sprintf("avatar path must be at most %d characters", maxAssetPathLength), nil)
+			if len(avatarPath) > domain.AssetPathMaxLength {
+				return BadRequest(fmt.Sprintf("avatar path must be at most %d characters", domain.AssetPathMaxLength), nil)
 			}
 
 			profile.AvatarPath = avatarPath
@@ -199,8 +183,8 @@ func (service *Service) UpdateProfile(ctx context.Context, input UpdateProfileIn
 
 		if input.BannerPath != nil {
 			bannerPath := strings.TrimSpace(*input.BannerPath)
-			if len(bannerPath) > maxAssetPathLength {
-				return BadRequest(fmt.Sprintf("banner path must be at most %d characters", maxAssetPathLength), nil)
+			if len(bannerPath) > domain.AssetPathMaxLength {
+				return BadRequest(fmt.Sprintf("banner path must be at most %d characters", domain.AssetPathMaxLength), nil)
 			}
 
 			profile.BannerPath = bannerPath
@@ -249,8 +233,8 @@ func (service *Service) UpdateSettings(ctx context.Context, input UpdateSettings
 				return BadRequest("locale is required", nil)
 			}
 
-			if len(locale) > maxLocaleLength {
-				return BadRequest(fmt.Sprintf("locale must be at most %d characters", maxLocaleLength), nil)
+			if len(locale) > domain.LocaleMaxLength {
+				return BadRequest(fmt.Sprintf("locale must be at most %d characters", domain.LocaleMaxLength), nil)
 			}
 
 			settings.Locale = locale
@@ -262,8 +246,8 @@ func (service *Service) UpdateSettings(ctx context.Context, input UpdateSettings
 				return BadRequest("timezone is required", nil)
 			}
 
-			if len(timezone) > maxTimezoneLength {
-				return BadRequest(fmt.Sprintf("timezone must be at most %d characters", maxTimezoneLength), nil)
+			if len(timezone) > domain.TimezoneMaxLength {
+				return BadRequest(fmt.Sprintf("timezone must be at most %d characters", domain.TimezoneMaxLength), nil)
 			}
 
 			settings.Timezone = timezone
@@ -323,8 +307,8 @@ func (service *Service) UpdatePrivacy(ctx context.Context, input UpdatePrivacyIn
 }
 
 func (service *Service) GetPublicProfile(ctx context.Context, username string, viewer Viewer) (domain.Profile, error) {
-	username = normalizeUsernameInput(username)
-	if !isValidUsername(username) {
+	username = domain.NormalizeUsername(username)
+	if !domain.IsValidUsername(username) {
 		return domain.Profile{}, BadRequest("invalid username", nil)
 	}
 
@@ -338,7 +322,7 @@ func (service *Service) GetPublicProfile(ctx context.Context, username string, v
 		return domain.Profile{}, service.wrapNotFound("profile not found", "failed to fetch account privacy settings", err)
 	}
 
-	if !canViewProfile(profile.UserID, privacy.ProfileVisibility, viewer) {
+	if !domain.CanViewProfile(profile.UserID, privacy.ProfileVisibility, viewer.UserID, viewer.Authenticated) {
 		return domain.Profile{}, NotFound("profile not found", nil)
 	}
 
@@ -358,7 +342,7 @@ func (service *Service) withWriteRepository(ctx context.Context, fn func(ctx con
 }
 
 func (service *Service) uniqueDefaultUsername(ctx context.Context, repo Repository, user authdomain.User) (string, error) {
-	base := defaultUsernameBase(user.Email)
+	base := defaultUsernameForUser(user)
 
 	if _, err := repo.GetProfileByUsername(ctx, base); err == nil {
 		candidate := suffixUsername(base, user.ID.String()[:defaultProfileSuffixID])
@@ -374,94 +358,6 @@ func (service *Service) uniqueDefaultUsername(ctx context.Context, repo Reposito
 	}
 
 	return base, nil
-}
-
-func defaultUsernameBase(email string) string {
-	local := email
-	if parts := strings.SplitN(email, "@", 2); len(parts) > 0 {
-		local = parts[0]
-	}
-
-	local = strings.ToLower(strings.TrimSpace(local))
-	builder := strings.Builder{}
-	for _, r := range local {
-		switch {
-		case r >= 'a' && r <= 'z':
-			builder.WriteRune(r)
-		case r >= '0' && r <= '9':
-			builder.WriteRune(r)
-		case r == '.' || r == '_' || r == '-':
-			builder.WriteRune(r)
-		default:
-			builder.WriteRune('_')
-		}
-	}
-
-	base := strings.Trim(builder.String(), "._-")
-	if len(base) > maxUsernameLength {
-		base = base[:maxUsernameLength]
-	}
-
-	if len(base) < minUsernameLength {
-		base = "user"
-	}
-
-	if !isValidUsername(base) {
-		base = "user"
-	}
-
-	return base
-}
-
-func defaultDisplayName(username string) string {
-	if username == "" {
-		return "User"
-	}
-
-	return username
-}
-
-func suffixUsername(base string, suffix string) string {
-	suffix = strings.ToLower(strings.TrimSpace(suffix))
-	if suffix == "" {
-		return base
-	}
-
-	maxBase := maxUsernameLength - len(suffix) - 1
-	if maxBase < minUsernameLength {
-		maxBase = minUsernameLength
-	}
-
-	if len(base) > maxBase {
-		base = base[:maxBase]
-	}
-
-	return strings.TrimRight(base, "._-") + "_" + suffix
-}
-
-func normalizeUsernameInput(value string) string {
-	return strings.ToLower(strings.TrimSpace(value))
-}
-
-func isValidUsername(value string) bool {
-	return usernamePattern.MatchString(value)
-}
-
-func canViewProfile(ownerID uuid.UUID, visibility string, viewer Viewer) bool {
-	if viewer.UserID != nil && *viewer.UserID == ownerID {
-		return true
-	}
-
-	switch visibility {
-	case domain.ProfileVisibilityPublic:
-		return true
-	case domain.ProfileVisibilityAuthenticated:
-		return viewer.Authenticated
-	case domain.ProfileVisibilityPrivate:
-		return false
-	default:
-		return false
-	}
 }
 
 func (service *Service) wrapNotFound(notFoundMessage string, internalMessage string, err error) error {

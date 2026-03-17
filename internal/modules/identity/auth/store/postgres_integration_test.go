@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
 	authapp "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/app"
 	"github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
@@ -63,8 +64,8 @@ func TestPostgresRepositoryAndTxManager(t *testing.T) {
 		if _, err := txRepo.CreateUser(ctx, domain.User{
 			ID:        userID,
 			Email:     "integration@example.com",
-			BaseRole:  "user",
-			Status:    "active",
+			BaseRole:  accessdomain.BaseRoleUser,
+			Status:    domain.StatusActive,
 			CreatedAt: now,
 			UpdatedAt: now,
 		}); err != nil {

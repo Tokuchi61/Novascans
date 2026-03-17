@@ -8,13 +8,9 @@ import (
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
 	"github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	"github.com/Tokuchi61/Novascans/internal/platform/events"
-)
-
-const (
-	StatusPendingVerification = "pending_verification"
-	StatusActive              = "active"
 )
 
 type Service struct {
@@ -61,8 +57,8 @@ func (service *Service) Register(ctx context.Context, input RegisterInput) (Auth
 	user := domain.User{
 		ID:        uuid.New(),
 		Email:     email,
-		BaseRole:  "user",
-		Status:    StatusPendingVerification,
+		BaseRole:  accessdomain.BaseRoleUser,
+		Status:    domain.StatusPendingVerification,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -74,13 +70,21 @@ func (service *Service) Register(ctx context.Context, input RegisterInput) (Auth
 		UpdatedAt:    now,
 	}
 
-	result, err := service.withSessionCreation(ctx, user, input.UserAgent, input.IPAddress, func(ctx context.Context, repo Repository) (domain.User, domain.Session, string, error) {
-		createdUser, createdSession, refreshToken, err := service.createUserAndSession(ctx, repo, user, credential, input.UserAgent, input.IPAddress, now)
+	var result AuthResult
+	err = service.withWriteRepository(ctx, func(ctx context.Context, repo Repository) error {
+		createdUser, createdSession, accessToken, refreshToken, err := service.createUserAndSession(ctx, repo, user, credential, input.UserAgent, input.IPAddress, now)
 		if err != nil {
-			return domain.User{}, domain.Session{}, "", err
+			return err
 		}
 
-		return createdUser, createdSession, refreshToken, nil
+		result = AuthResult{
+			User:         createdUser,
+			Session:      createdSession,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		}
+
+		return nil
 	})
 	if err != nil {
 		return AuthResult{}, err
@@ -393,28 +397,28 @@ func (service *Service) issueAuthResult(ctx context.Context, user domain.User, u
 	return result, nil
 }
 
-func (service *Service) createUserAndSession(ctx context.Context, repo Repository, user domain.User, credential domain.PasswordCredential, userAgent string, ipAddress string, now time.Time) (domain.User, domain.Session, string, error) {
+func (service *Service) createUserAndSession(ctx context.Context, repo Repository, user domain.User, credential domain.PasswordCredential, userAgent string, ipAddress string, now time.Time) (domain.User, domain.Session, string, string, error) {
 	createdUser, err := repo.CreateUser(ctx, user)
 	if err != nil {
-		return domain.User{}, domain.Session{}, "", Internal("failed to create user", err)
+		return domain.User{}, domain.Session{}, "", "", Internal("failed to create user", err)
 	}
 
 	if _, err := repo.CreatePasswordCredential(ctx, credential); err != nil {
-		return domain.User{}, domain.Session{}, "", Internal("failed to create password credential", err)
+		return domain.User{}, domain.Session{}, "", "", Internal("failed to create password credential", err)
 	}
 
 	if service.provisioner != nil {
 		if err := service.provisioner.ProvisionDefaults(ctx, createdUser, now); err != nil {
-			return domain.User{}, domain.Session{}, "", Internal("failed to provision account defaults", err)
+			return domain.User{}, domain.Session{}, "", "", Internal("failed to provision account defaults", err)
 		}
 	}
 
-	session, _, refreshToken, err := service.createSessionForUser(ctx, repo, createdUser, userAgent, ipAddress, now)
+	session, accessToken, refreshToken, err := service.createSessionForUser(ctx, repo, createdUser, userAgent, ipAddress, now)
 	if err != nil {
-		return domain.User{}, domain.Session{}, "", err
+		return domain.User{}, domain.Session{}, "", "", err
 	}
 
-	return createdUser, session, refreshToken, nil
+	return createdUser, session, accessToken, refreshToken, nil
 }
 
 func (service *Service) createSessionForUser(ctx context.Context, repo Repository, user domain.User, userAgent string, ipAddress string, now time.Time) (domain.Session, string, string, error) {
@@ -456,40 +460,6 @@ func (service *Service) publishUserCreated(ctx context.Context, userID uuid.UUID
 			"user_id": userID.String(),
 		},
 	})
-}
-
-func (service *Service) withSessionCreation(ctx context.Context, user domain.User, userAgent string, ipAddress string, fn func(ctx context.Context, repo Repository) (domain.User, domain.Session, string, error)) (AuthResult, error) {
-	var result AuthResult
-
-	if err := service.withWriteRepository(ctx, func(ctx context.Context, repo Repository) error {
-		createdUser, session, refreshToken, err := fn(ctx, repo)
-		if err != nil {
-			return err
-		}
-
-		accessToken, err := buildAccessToken(service.config.AccessTokenSecret, accessTokenClaims{
-			UserID:    createdUser.ID,
-			SessionID: session.ID,
-			IssuedAt:  time.Now().UTC().Unix(),
-			ExpiresAt: time.Now().UTC().Add(service.config.AccessTokenTTL).Unix(),
-		})
-		if err != nil {
-			return Internal("failed to sign access token", err)
-		}
-
-		result = AuthResult{
-			User:         createdUser,
-			Session:      session,
-			AccessToken:  accessToken,
-			RefreshToken: refreshToken,
-		}
-
-		return nil
-	}); err != nil {
-		return AuthResult{}, err
-	}
-
-	return result, nil
 }
 
 func (service *Service) withWriteRepository(ctx context.Context, fn func(ctx context.Context, repo Repository) error) error {

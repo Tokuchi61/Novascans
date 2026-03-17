@@ -12,12 +12,6 @@ import (
 	authdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 )
 
-var assignableBaseRoles = map[string]struct{}{
-	"user":      {},
-	"moderator": {},
-	"admin":     {},
-}
-
 type Service struct {
 	repo       Repository
 	unitOfWork UnitOfWork
@@ -164,7 +158,7 @@ func (service *Service) RemoveSubRole(ctx context.Context, input AssignSubRoleIn
 
 func (service *Service) UpdateBaseRole(ctx context.Context, input UpdateBaseRoleInput) error {
 	baseRole := normalizeKey(input.BaseRole)
-	if _, ok := assignableBaseRoles[baseRole]; !ok {
+	if !domain.IsAssignableBaseRole(baseRole) {
 		return BadRequest("invalid base role", nil)
 	}
 

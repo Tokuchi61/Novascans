@@ -96,11 +96,11 @@ func run(ctx context.Context, cfg config.Config) error {
 	}
 
 	users := []seededUser{
-		{email: "user.seed@novascans.local", baseRole: "user"},
-		{email: "manga.mod@novascans.local", baseRole: "moderator", subRoleKey: "manga_moderator"},
-		{email: "comment.mod@novascans.local", baseRole: "moderator", subRoleKey: "comment_moderator"},
-		{email: "chapter.mod@novascans.local", baseRole: "moderator", subRoleKey: "chapter_moderator"},
-		{email: "admin.seed@novascans.local", baseRole: "admin"},
+		{email: "user.seed@novascans.local", baseRole: accessdomain.BaseRoleUser},
+		{email: "manga.mod@novascans.local", baseRole: accessdomain.BaseRoleModerator, subRoleKey: "manga_moderator"},
+		{email: "comment.mod@novascans.local", baseRole: accessdomain.BaseRoleModerator, subRoleKey: "comment_moderator"},
+		{email: "chapter.mod@novascans.local", baseRole: accessdomain.BaseRoleModerator, subRoleKey: "chapter_moderator"},
+		{email: "admin.seed@novascans.local", baseRole: accessdomain.BaseRoleAdmin},
 	}
 
 	for _, userSeed := range users {
@@ -144,7 +144,7 @@ func ensureUser(ctx context.Context, authRepo *authstore.PostgresRepository, acc
 			ID:              uuid.New(),
 			Email:           email,
 			BaseRole:        baseRole,
-			Status:          authapp.StatusActive,
+			Status:          authdomain.StatusActive,
 			EmailVerifiedAt: &verifiedAt,
 			CreatedAt:       now,
 			UpdatedAt:       now,
@@ -184,11 +184,11 @@ func ensureUser(ctx context.Context, authRepo *authstore.PostgresRepository, acc
 		user.BaseRole = baseRole
 	}
 
-	if user.EmailVerifiedAt == nil || user.Status != authapp.StatusActive {
+	if user.EmailVerifiedAt == nil || user.Status != authdomain.StatusActive {
 		if err := authRepo.MarkUserEmailVerified(ctx, user.ID, now); err != nil {
 			return authdomain.User{}, fmt.Errorf("mark user verified for %s: %w", email, err)
 		}
-		user.Status = authapp.StatusActive
+		user.Status = authdomain.StatusActive
 		user.EmailVerifiedAt = &now
 	}
 

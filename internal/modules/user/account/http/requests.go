@@ -1,7 +1,6 @@
 package http
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
@@ -10,8 +9,6 @@ import (
 	"github.com/Tokuchi61/Novascans/internal/modules/user/account/domain"
 	"github.com/Tokuchi61/Novascans/internal/platform/validation"
 )
-
-var usernamePattern = regexp.MustCompile(`^[a-z0-9._-]{3,32}$`)
 
 type updateProfileRequest struct {
 	Username    *string `json:"username"`
@@ -38,8 +35,8 @@ func (request updateProfileRequest) Validate(_ *validation.Validator) validation
 	}
 
 	if request.Username != nil {
-		username := strings.ToLower(strings.TrimSpace(*request.Username))
-		if !usernamePattern.MatchString(username) {
+		username := domain.NormalizeUsername(*request.Username)
+		if !domain.IsValidUsername(username) {
 			errs.Add("username", "must be 3-32 chars and contain only lowercase letters, numbers, dots, underscores or hyphens")
 		}
 	}

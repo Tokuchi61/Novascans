@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
 )
 
@@ -61,7 +62,7 @@ func TestAccessMeResolvesPrincipalFromAuthToken(t *testing.T) {
 		t.Fatal("expected authenticated principal, got guest")
 	}
 
-	if response.Data.BaseRole != "user" {
+	if response.Data.BaseRole != accessdomain.BaseRoleUser {
 		t.Fatalf("expected base role user, got %q", response.Data.BaseRole)
 	}
 

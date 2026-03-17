@@ -14,8 +14,7 @@ import (
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
-	authapp "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/app"
+	accessdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
 	authdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	authstore "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/store"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
@@ -61,8 +60,8 @@ func TestPostgresRepositoryResolvesUserAccess(t *testing.T) {
 	if _, err := authRepo.CreateUser(t.Context(), authdomain.User{
 		ID:              userID,
 		Email:           "moderator@example.com",
-		BaseRole:        "moderator",
-		Status:          authapp.StatusActive,
+		BaseRole:        accessdomain.BaseRoleModerator,
+		Status:          authdomain.StatusActive,
 		EmailVerifiedAt: &now,
 		CreatedAt:       now,
 		UpdatedAt:       now,
@@ -70,7 +69,7 @@ func TestPostgresRepositoryResolvesUserAccess(t *testing.T) {
 		t.Fatalf("create user: %v", err)
 	}
 
-	permission, err := repo.CreatePermission(t.Context(), domain.Permission{
+	permission, err := repo.CreatePermission(t.Context(), accessdomain.Permission{
 		ID:          uuid.New(),
 		Key:         "comment.moderate",
 		Description: "Moderate comments",
@@ -81,7 +80,7 @@ func TestPostgresRepositoryResolvesUserAccess(t *testing.T) {
 		t.Fatalf("create permission: %v", err)
 	}
 
-	subRole, err := repo.CreateSubRole(t.Context(), domain.SubRole{
+	subRole, err := repo.CreateSubRole(t.Context(), accessdomain.SubRole{
 		ID:          uuid.New(),
 		Key:         "comment_moderator",
 		Name:        "Comment Moderator",
@@ -119,7 +118,7 @@ func TestPostgresRepositoryResolvesUserAccess(t *testing.T) {
 		t.Fatalf("expected comment_moderator sub role, got %+v", subRoles)
 	}
 
-	if err := repo.UpdateUserBaseRole(t.Context(), userID, "admin", now); err != nil {
+	if err := repo.UpdateUserBaseRole(t.Context(), userID, accessdomain.BaseRoleAdmin, now); err != nil {
 		t.Fatalf("update user base role: %v", err)
 	}
 
@@ -128,7 +127,7 @@ func TestPostgresRepositoryResolvesUserAccess(t *testing.T) {
 		t.Fatalf("get user by id: %v", err)
 	}
 
-	if user.BaseRole != "admin" {
+	if user.BaseRole != accessdomain.BaseRoleAdmin {
 		t.Fatalf("expected base role admin, got %q", user.BaseRole)
 	}
 }
