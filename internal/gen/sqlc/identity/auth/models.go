@@ -40,6 +40,32 @@ type AccessUserSubRole struct {
 	AssignedAt time.Time
 }
 
+type AccountPrivacySetting struct {
+	UserID            uuid.UUID
+	ProfileVisibility string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+}
+
+type AccountProfile struct {
+	UserID      uuid.UUID
+	Username    string
+	DisplayName string
+	Bio         string
+	AvatarPath  string
+	BannerPath  string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type AccountSetting struct {
+	UserID    uuid.UUID
+	Locale    string
+	Timezone  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type AuthEmailVerificationToken struct {
 	ID         uuid.UUID
 	UserID     uuid.UUID

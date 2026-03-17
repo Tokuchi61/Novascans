@@ -12,7 +12,8 @@ Auth, access, manga, topluluk ve admin modullerini yeniden altyapi kurmadan tasi
 
 - [x] Faz 1: altyapi temeli tamamlandi
 - [x] Faz 2: identity core ve access control tamamlandi
-- [ ] Siradaki faz: domain odakli modullerden biri (`manga`, `moderation`, `admin` veya `user/account`) secilecek
+- [x] Faz 3: `user/account` tamamlandi
+- [ ] Faz 4 planlaniyor: `content/manga`
 
 ## Delivered So Far
 
@@ -37,6 +38,15 @@ Auth, access, manga, topluluk ve admin modullerini yeniden altyapi kurmadan tasi
 - admin tarafindan sub-role olusturma ve kullaniciya atama endpointleri
 - tekrar uretilebilir seed komutu
 
+### Phase 3
+
+- `user/account` modulunun `profile / settings / privacy` sinirlariyla eklenmesi
+- account tablolari, migrationlari, query dosyalari ve `sqlc` generated kodunun eklenmesi
+- register akisinda default account kayitlarinin tek transaction icinde olusturulmasi
+- `account/me`, own profile/settings/privacy read-update ve public profile endpointlerinin eklenmesi
+- `username` tabanli public profile ve `public / authenticated / private` privacy davranisinin eklenmesi
+- seed kullanicilar icin default account kayitlarinin da idempotent olarak uretilmesi
+
 ## Active Technical Shape
 
 ### Stack
@@ -52,6 +62,7 @@ Auth, access, manga, topluluk ve admin modullerini yeniden altyapi kurmadan tasi
 
 - `identity/auth`
 - `identity/access`
+- `user/account`
 
 Fiziksel organizasyon `kategori -> gercek modul` seklini izler. Ust klasorler yalnizca gruplama amaclidir.
 
@@ -72,6 +83,17 @@ Fiziksel organizasyon `kategori -> gercek modul` seklini izler. Ust klasorler ya
 - kullaniciya `0..n` adet sub-role atanabilir
 - sub-role yetkileri permission katalogundan secilir
 - `admin` authorization tarafinda tam yetki bypass olarak davranir
+
+### Account Decisions
+
+- `auth` kullanici kimligini olusturmaya devam eder; `account` yeni kullanici olusturmaz
+- `users` tablosu auth sahipliginde kalir ve kimlik koku olarak kullanilir
+- `account` fazi `users.id` uzerine bagli kayitlar uretir
+- register akisi sirasinda default account kayitlari senkron ve tek transaction icinde olusturulur
+- bu entegrasyon event tabanli degil, `AccountProvisioner` benzeri bir port/servis uzerinden saglanir
+- ilk account kapsaminda `profile`, `settings` ve `privacy` davranislari ayni modul siniri icinde ele alinir
+- public profile icin `username` benzersiz alan olarak account tarafinda sahiplenilir
+- `wall`, `friends`, `follow`, `dm`, `library` ve `history` bu fazin disindadir
 
 ## Seed Baseline
 
@@ -102,12 +124,12 @@ Seed komutu asagidaki veriyi idempotent olarak yukler:
 
 ## Next Planning Direction
 
-Bir sonraki faz secilirken auth/access altyapisini tekrar kullanacak bir domain secilmeli. En mantikli adaylar:
+Siradaki aktif plan yonu `content/manga`. Bu fazda hedef:
 
-- `content/manga`
-- `backoffice/moderation`
-- `backoffice/admin`
-- `user/account`
+- manga, chapter ve page veri modelini kurmak
+- public okuma endpointlerini acmak
+- management API'lerini mevcut auth/access temeliyle korumak
+- reading history, library, comment ve VIP erisim gibi bagli davranislari sonraki fazlara birakmak
 
 ---
-*Last updated: 2026-03-17 after Phase 2 completion*
+*Last updated: 2026-03-17 after Phase 3 completion*

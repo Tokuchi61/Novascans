@@ -26,3 +26,16 @@ sql:
             go_type:
               import: "github.com/google/uuid"
               type: "UUID"
+  - engine: "postgresql"
+    schema: "db/schema"
+    queries: "db/queries/user/account"
+    gen:
+      go:
+        package: "accountsqlc"
+        out: "internal/gen/sqlc/user/account"
+        sql_package: "database/sql"
+        overrides:
+          - db_type: "uuid"
+            go_type:
+              import: "github.com/google/uuid"
+              type: "UUID"

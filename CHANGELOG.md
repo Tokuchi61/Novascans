@@ -41,6 +41,18 @@ Bu dosya proje degisikliklerini kaydeder.
 
 - No unreleased changes yet.
 
+## 0.3.0 - 2026-03-17
+
+- Phase 3 tamamlandi; yeni `user/account` modulu eklendi ve auth kimligi ile account alanlari arasindaki sinir netlestirildi.
+- `account_profiles`, `account_settings` ve `account_privacy_settings` tablolarini ekleyen yeni migration, schema SQL dosyasi ve `sqlc` sorgu/uretim akisi eklendi.
+- `identity/auth` register akisi, default account kayitlarini tek transaction icinde olusturacak sekilde `AccountProvisioner` entegrasyonu ile genisletildi.
+- Ortak transaction context zinciri platform seviyesinde gelistirildi; auth/access unit-of-work akislari artik ayni context uzerinden baska modullerle transaction paylasabilecek hale geldi.
+- `user/account` icin `me`, own profile/settings/privacy read-update ve public profile read endpointleri eklendi.
+- Public profile davranisi `username` uzerinden kuruldu; privacy seviyeleri `public`, `authenticated`, `private` olarak tanimlandi.
+- Seed komutu account defaults uretecek sekilde guncellendi; mevcut seed kullanicilar artik profil, ayarlar ve privacy kayitlariyla geliyor.
+- Yeni unit ve integration testler eklendi: account service davranisi, register -> account bootstrap zinciri ve provisioning hatasinda rollback davranisi dogrulandi.
+- Dogrulama tamamlandi: `sqlc generate`, `go test ./...`, `go test -tags=integration ./...`, `docker compose up -d --build`, container ici `migrate up`, `seed`, account register/me/update/privacy/public-profile smoke senaryolari ve seeded admin account smoke akisi canli serviste dogrulandi.
+
 ## 0.2.0 - 2026-03-17
 
 - Phase 2 tamamlandi; `identity/auth` modulu `http / app / domain / store` sinirlarina refactor edildi ve eski root-level handler/service/types yapisi kaldirildi.

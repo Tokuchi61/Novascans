@@ -34,7 +34,7 @@ func NewModule(deps moduleshared.Dependencies) *Module {
 		RefreshTokenTTL:           deps.Config.Auth.RefreshTokenTTL,
 		EmailVerificationTokenTTL: deps.Config.Auth.EmailVerificationTokenTTL,
 		PasswordResetTokenTTL:     deps.Config.Auth.PasswordResetTokenTTL,
-	})
+	}, nil)
 	handler := authhttp.NewHandler(deps.Logger, deps.Validator, service)
 
 	return &Module{

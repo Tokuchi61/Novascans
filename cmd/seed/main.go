@@ -19,6 +19,8 @@ import (
 	authapp "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/app"
 	authdomain "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
 	authstore "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/store"
+	accountapp "github.com/Tokuchi61/Novascans/internal/modules/user/account/app"
+	accountstore "github.com/Tokuchi61/Novascans/internal/modules/user/account/store"
 	"github.com/Tokuchi61/Novascans/internal/platform/config"
 )
 
@@ -56,6 +58,7 @@ func run(ctx context.Context, cfg config.Config) error {
 
 	authRepo := authstore.NewPostgresRepository(db)
 	accessRepo := accessstore.NewPostgresRepository(db)
+	accountService := accountapp.NewService(accountstore.NewPostgresRepository(db), accountstore.NewPostgresUnitOfWork(db))
 
 	permissions := []accessdomain.Permission{
 		newPermission("manga.create", "Create manga entries"),
@@ -108,6 +111,10 @@ func run(ctx context.Context, cfg config.Config) error {
 			if err := accessRepo.AssignSubRoleToUser(ctx, user.ID, role.ID, time.Now().UTC()); err != nil {
 				return fmt.Errorf("assign sub role %s to %s: %w", role.Key, user.Email, err)
 			}
+		}
+
+		if err := accountService.ProvisionDefaults(ctx, user, time.Now().UTC()); err != nil {
+			return fmt.Errorf("provision account for %s: %w", user.Email, err)
 		}
 	}
 

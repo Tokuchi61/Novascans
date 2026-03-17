@@ -10,6 +10,7 @@ import (
 	authsqlc "github.com/Tokuchi61/Novascans/internal/gen/sqlc/identity/auth"
 	authapp "github.com/Tokuchi61/Novascans/internal/modules/identity/auth/app"
 	"github.com/Tokuchi61/Novascans/internal/modules/identity/auth/domain"
+	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
 
 type PostgresRepository struct {
@@ -280,6 +281,7 @@ func (uow *PostgresUnitOfWork) WithinTransaction(ctx context.Context, fn func(ct
 		return authapp.Internal("begin transaction failed", err)
 	}
 
+	ctx = platformdb.ContextWithTx(ctx, tx)
 	repo := newPostgresRepository(authsqlc.New(tx))
 	if err := fn(ctx, repo); err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {

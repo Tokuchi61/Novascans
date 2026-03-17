@@ -10,6 +10,7 @@ import (
 	accesssqlc "github.com/Tokuchi61/Novascans/internal/gen/sqlc/identity/access"
 	accessapp "github.com/Tokuchi61/Novascans/internal/modules/identity/access/app"
 	"github.com/Tokuchi61/Novascans/internal/modules/identity/access/domain"
+	platformdb "github.com/Tokuchi61/Novascans/internal/platform/db"
 )
 
 type PostgresRepository struct {
@@ -234,6 +235,7 @@ func (uow *PostgresUnitOfWork) WithinTransaction(ctx context.Context, fn func(ct
 		return accessapp.Internal("begin transaction failed", err)
 	}
 
+	ctx = platformdb.ContextWithTx(ctx, tx)
 	repo := newPostgresRepository(accesssqlc.New(tx))
 	if err := fn(ctx, repo); err != nil {
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {

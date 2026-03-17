@@ -5,14 +5,14 @@
 See: `.planning/PROJECT.md`
 
 **Core value:** Sonraki auth, manga, topluluk ve admin modullerini tekrar temel degistirmeden tasiyabilecek temiz, hizli ve genisletilebilir bir backend omurgasi kurmak.
-**Current focus:** Phase 2 tamamlandi; sonraki domain fazi secilecek.
+**Current focus:** Phase 3 tamamlandi; Phase 4 `content/manga` siradaki mantikli plan asamasi.
 
 ## Current Position
 
-Phase: 2 of 2 completed phases
-Plan: 6 of 6 in current phase
-Status: Phase 2 completed
-Last activity: 2026-03-17 - auth core, access control, seed, test, docker smoke ve release hazirlandi
+Phase: 3 completed phases + 1 planned phase
+Plan: Phase 4 not yet detailed
+Status: Phase 3 completed
+Last activity: 2026-03-17 - Phase 3 account core uygulandi ve canli olarak dogrulandi
 
 Progress: [##########] 100%
 
@@ -23,16 +23,11 @@ Progress: [##########] 100%
 
 ## Open Direction
 
-Siradaki faz secimi bekleniyor. Hazir altyapiyla en mantikli adaylar:
-
-- `content/manga`
-- `backoffice/moderation`
-- `backoffice/admin`
-- `user/account`
+Siradaki aktif hedef `content/manga` fazi. Auth/access/account omurgasi artik hazir; siradaki domain fazinda public read ve permission-korumali write akislarini manga verisi uzerinde kurmak mantikli.
 
 ## Blockers
 
 - Yok
 
 ---
-*Updated: 2026-03-17 after Phase 2 completion*
+*Updated: 2026-03-17 after Phase 3 completion*

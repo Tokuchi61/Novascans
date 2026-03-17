@@ -18,19 +18,25 @@ const (
 )
 
 type Service struct {
-	repo       Repository
-	unitOfWork UnitOfWork
-	events     events.Bus
-	config     ServiceConfig
+	repo        Repository
+	unitOfWork  UnitOfWork
+	events      events.Bus
+	config      ServiceConfig
+	provisioner AccountProvisioner
 }
 
-func NewService(repo Repository, unitOfWork UnitOfWork, bus events.Bus, cfg ServiceConfig) *Service {
+func NewService(repo Repository, unitOfWork UnitOfWork, bus events.Bus, cfg ServiceConfig, provisioner AccountProvisioner) *Service {
 	return &Service{
-		repo:       repo,
-		unitOfWork: unitOfWork,
-		events:     bus,
-		config:     cfg,
+		repo:        repo,
+		unitOfWork:  unitOfWork,
+		events:      bus,
+		config:      cfg,
+		provisioner: provisioner,
 	}
+}
+
+func (service *Service) SetAccountProvisioner(provisioner AccountProvisioner) {
+	service.provisioner = provisioner
 }
 
 func (service *Service) Ping(_ context.Context) PingData {
@@ -395,6 +401,12 @@ func (service *Service) createUserAndSession(ctx context.Context, repo Repositor
 
 	if _, err := repo.CreatePasswordCredential(ctx, credential); err != nil {
 		return domain.User{}, domain.Session{}, "", Internal("failed to create password credential", err)
+	}
+
+	if service.provisioner != nil {
+		if err := service.provisioner.ProvisionDefaults(ctx, createdUser, now); err != nil {
+			return domain.User{}, domain.Session{}, "", Internal("failed to provision account defaults", err)
+		}
 	}
 
 	session, _, refreshToken, err := service.createSessionForUser(ctx, repo, createdUser, userAgent, ipAddress, now)

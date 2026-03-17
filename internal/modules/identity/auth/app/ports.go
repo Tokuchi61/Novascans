@@ -37,6 +37,10 @@ type UnitOfWork interface {
 	WithinTransaction(ctx context.Context, fn func(ctx context.Context, repo Repository) error) error
 }
 
+type AccountProvisioner interface {
+	ProvisionDefaults(ctx context.Context, user domain.User, now time.Time) error
+}
+
 type Authenticator interface {
 	AuthenticateAccessToken(ctx context.Context, token string) (AuthenticatedUser, error)
 }
